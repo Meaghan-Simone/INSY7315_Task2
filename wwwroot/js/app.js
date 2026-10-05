@@ -15,16 +15,22 @@ document.addEventListener('DOMContentLoaded', function () {
     var host = document.querySelector('.content'); if (!host) return;
     var el = document.createElement('div');
     el.className = 'flash ' + (kind || 'error');
+    el.setAttribute('role', (kind || 'error') === 'error' ? 'alert' : 'status');
     el.innerHTML = '<i class="bi bi-info-circle"></i>';
     el.appendChild(document.createTextNode(' ' + msg));
     host.insertBefore(el, host.firstChild);
     setTimeout(function () { el.remove(); }, 5000);
   }
 
+  // Decorative icons are hidden from screen readers (icon-only controls carry an aria-label instead)
+  document.querySelectorAll('i.bi').forEach(function (i) { i.setAttribute('aria-hidden', 'true'); });
+  document.querySelectorAll('.nav-item.active').forEach(function (a) { a.setAttribute('aria-current', 'page'); });
+
   // Mobile sidebar
   var toggle = document.querySelector('.menu-toggle'), sidebar = document.querySelector('.sidebar'), scrim = document.querySelector('.scrim');
-  function closeSidebar() { sidebar && sidebar.classList.remove('open'); scrim && scrim.classList.remove('show'); }
-  if (toggle && sidebar) toggle.addEventListener('click', function () { sidebar.classList.toggle('open'); scrim && scrim.classList.toggle('show'); });
+  function closeSidebar() { sidebar && sidebar.classList.remove('open'); scrim && scrim.classList.remove('show'); toggle && toggle.setAttribute('aria-expanded', 'false'); }
+  if (toggle && sidebar) toggle.addEventListener('click', function () { var open = sidebar.classList.toggle('open'); scrim && scrim.classList.toggle('show', open); toggle.setAttribute('aria-expanded', open ? 'true' : 'false'); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSidebar(); });
   scrim && scrim.addEventListener('click', closeSidebar);
 
   // Tabs (client-side panels)
@@ -32,8 +38,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var panels = document.querySelectorAll('#' + group.getAttribute('data-tabs') + ' > .tab-panel');
     group.querySelectorAll('.tab').forEach(function (tab, i) {
       tab.addEventListener('click', function () {
-        group.querySelectorAll('.tab').forEach(function (t) { t.classList.remove('active'); });
-        tab.classList.add('active');
+        group.querySelectorAll('.tab').forEach(function (t) { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
+        tab.classList.add('active'); tab.setAttribute('aria-selected', 'true');
         panels.forEach(function (p) { p.classList.remove('active'); });
         if (panels[i]) panels[i].classList.add('active');
       });
@@ -47,17 +53,29 @@ document.addEventListener('DOMContentLoaded', function () {
     btn.addEventListener('click', function (e) {
       e.stopPropagation();
       document.querySelectorAll('.dropdown-panel.show').forEach(function (m) { if (m !== menu) m.classList.remove('show'); });
-      menu.classList.toggle('show');
+      var open = menu.classList.toggle('show');
+      document.querySelectorAll('[data-dropdown]').forEach(function (b) { b.setAttribute('aria-expanded', b === btn && open ? 'true' : 'false'); });
     });
   });
+  function closeDropdowns(returnFocus) {
+    var owner = null;
+    if (returnFocus && document.activeElement) { var dd = document.activeElement.closest('.dropdown'); owner = dd && dd.querySelector('[data-dropdown]'); }
+    document.querySelectorAll('.dropdown-panel.show').forEach(function (m) { m.classList.remove('show'); });
+    document.querySelectorAll('[data-dropdown]').forEach(function (b) { b.setAttribute('aria-expanded', 'false'); });
+    if (owner) owner.focus();
+  }
   document.addEventListener('click', function (e) {
     if (e.target.closest('.dropdown-panel')) return;
-    document.querySelectorAll('.dropdown-panel.show').forEach(function (m) { m.classList.remove('show'); });
+    closeDropdowns(false);
   });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDropdowns(true); });
 
   // Clickable table rows (replaces inline onclick, which the CSP forbids)
   document.querySelectorAll('tr[data-href]').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'link');
     row.addEventListener('click', function (e) { if (!e.target.closest('a,button,input,select,form,label')) location.href = row.getAttribute('data-href'); });
+    row.addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.key === ' ') && e.target === row) { e.preventDefault(); location.href = row.getAttribute('data-href'); } });
   });
 
   // Auto-submit filters
@@ -72,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelectorAll('form').forEach(function (f) {
     f.addEventListener('submit', function (e) {
       if (e.defaultPrevented) return;
-      f.querySelectorAll('button[type=submit]:not([data-keep])').forEach(function (b) { setTimeout(function () { b.disabled = true; }, 0); });
+      f.querySelectorAll('button[type=submit]:not([data-keep])').forEach(function (b) { setTimeout(function () { b.disabled = true; b.classList.add('is-loading'); b.setAttribute('aria-busy', 'true'); }, 0); });
     });
   });
 
@@ -180,6 +198,7 @@ document.addEventListener('DOMContentLoaded', function () {
     btn.addEventListener('click', function () {
       var input = document.getElementById(btn.getAttribute('data-toggle-password')); if (!input) return;
       input.type = input.type === 'password' ? 'text' : 'password';
+      btn.setAttribute('aria-pressed', input.type === 'text' ? 'true' : 'false');
     });
   });
 
