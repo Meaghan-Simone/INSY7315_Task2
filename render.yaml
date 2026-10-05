@@ -19,6 +19,17 @@ services:
         value: "false"
       - key: Seed__MustChangePassword
         value: "true"
+      # Initial sign-in passwords for the four seeded users. Render asks for these when the blueprint is created, so the
+      # defaults in appsettings.json (public in GitHub) are never used in production. Each must meet the password policy
+      # (12+ characters, upper, lower, digit and symbol). Everyone is forced to change theirs at first sign-in.
+      - key: Seed__Users__0__Password
+        sync: false
+      - key: Seed__Users__1__Password
+        sync: false
+      - key: Seed__Users__2__Password
+        sync: false
+      - key: Seed__Users__3__Password
+        sync: false
       - key: App__PublicBaseUrl                   # e.g. https://uncovering-greatness-crm.onrender.com or your own domain
         sync: false
       - key: Email__Host
