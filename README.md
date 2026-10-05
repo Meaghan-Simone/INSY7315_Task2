@@ -42,9 +42,10 @@ HTTPS address so links inside emails (reset, unsubscribe, open tracking) are cor
 
 | | Admin | Sales rep | Staff |
 |---|---|---|---|
-| View leads, companies, events, pipeline, own calendar | ✔ | ✔ | ✔ |
+| See leads (list, pipeline, search, dashboard, exports, company/event pages) | **all leads** | **only leads assigned to them** | only leads assigned to them (none, since staff cannot own leads) |
+| View companies, events, own calendar | ✔ | ✔ | ✔ |
 | Create leads/companies, tasks, log calls, notes | ✔ | ✔ | – |
-| Edit / move / reassign a lead | any | only leads assigned to them (or unassigned) | – |
+| Edit / move / reassign a lead | any | their own leads | – |
 | Delete leads, companies | ✔ | – | – |
 | Manage events, campaigns, users, audit log | ✔ | – | – |
 
@@ -74,7 +75,7 @@ HTTPS address so links inside emails (reset, unsubscribe, open tracking) are cor
 ```bash
 # 1. get a token
 curl -X POST http://localhost:5080/api/v1/auth/token -H "Content-Type: application/json" \
-     -d '{"email":"thandiwe@uncoveringgreatness.co.za","password":"Summit#Climb2026"}'
+     -d '{"email":"admin@uncoveringgreatness.co.za","password":"P@ssword4321"}'
 # 2. use it
 curl http://localhost:5080/api/v1/leads?stage=Qualified -H "Authorization: Bearer <accessToken>"
 ```
@@ -129,11 +130,44 @@ second, assigned to your team and with the owner notified. This is push, not pol
 
 ## Behaviour worth knowing
 
-* New leads with no owner are auto-assigned to the sales rep with the fewest open leads.
+* **Lead visibility is enforced in one place** (`Security/LeadScope.cs`): admins see every lead, everyone else only the leads assigned to them. The same rule
+  covers the web UI, the API, search, dashboard figures, company/event pages, pipeline and CSV export. A lead that is not yours returns *not found*.
+* New leads created by an admin with no owner are auto-assigned to the sales rep with the fewest open leads. A rep who creates a lead keeps it (assigned to them),
+  and if a rep hands a lead to a colleague they are taken back to their list because they can no longer open it.
 * A background worker creates in-app reminders for due/overdue follow-ups and tasks (once per item per day).
 * Lead follow-up dates appear on the assignee's calendar automatically; calendar events are private, shared or team-wide.
 * Campaigns send in the background, personalise `{{FirstName}}`, `{{FullName}}`, `{{Company}}`, track opens, and resume after a restart.
 * Dates entered by users are treated as South African time (SAST); system timestamps are stored in UTC.
+
+## Testing
+
+```bash
+dotnet test Tests/UncoveringGreatnessCRM.Tests.csproj
+```
+
+* **Unit tests**: password policy, CSV export/import safety, result/paging types, the lead-visibility rule, form payload parsing.
+* **Integration tests** boot the real application (middleware, EF Core, authentication, authorisation) on a throw-away SQLite database and call the JSON API:
+  health check, security headers, sign-in requirements, per-user lead visibility (list, detail, dashboard, export), role restrictions, creating and permanently
+  deleting a user with lead transfer, and the audit trail.
+* The `Tests/` folder is excluded from the web project in `UncoveringGreatnessCRM.csproj`, so it never ships with the app.
+
+## Pipelines (GitHub Actions)
+
+* `.github/workflows/ci.yml`: restore, build, run all tests with coverage, upload results, build the Docker image. Runs on pushes to `develop`, `feature/**`,
+  `fix/**`, `hotfix/**` and on every pull request into `develop` or `main`.
+* `.github/workflows/cd.yml`: on every merge to `main`: re-run CI, call the Render deploy hook, wait for `/healthz`, smoke-test the login page.
+* Branching model, protection rules and release flow: see [`docs/BRANCHING.md`](docs/BRANCHING.md).
+* Putting the repo on GitHub, how the Docker image works, running it locally with `docker compose up --build` and deploying to Render step by step: see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+* Needed once in GitHub: secret `RENDER_DEPLOY_HOOK_URL`, repository variable `APP_URL`, and a `production` environment (optional approvals).
+
+## Accessibility and front-end notes
+
+* Skip-to-content link, labelled landmarks, `aria-current` on the active menu item, `aria-expanded` on menus, Esc closes menus and the mobile drawer.
+* The account menu, notification bell and clickable table rows are reachable and usable with the keyboard only; focus outlines are always visible.
+* Text and button colours meet WCAG AA contrast (4.5:1); respects reduced-motion and increased-contrast preferences.
+* Responsive layout for desktop, tablet and phone; tables scroll inside their own container instead of stretching the page.
+* Feedback: success/error banners (announced to screen readers), spinner on submit buttons, double-submit protection, friendly 404/error pages.
+* Performance: the sign-in background image is 440 KB (was 16 MB), static files are fingerprinted (`asp-append-version`), no scripts block rendering.
 
 ## Project layout
 
@@ -142,6 +176,7 @@ Domain/        entities + enums          Data/       DbContext + seeder
 Services/      all business rules        Security/   auth, tokens, policies, headers
 Controllers/   MVC controllers           Controllers/Api/   JSON API
 Views/         Razor views (original design)   wwwroot/   css, js, images
+Tests/         xUnit unit + integration tests  .github/    CI/CD workflows       docs/   branching guide
 ```
 
 ## Email setup (step by step)
@@ -163,7 +198,8 @@ Views/         Razor views (original design)   wwwroot/   css, js, images
 ## Deploying to Render (Docker)
 
 1. Push this folder to a private GitHub repo (do not commit `App_Data/`).
-2. Render → New → Blueprint (uses `render.yaml`) or New → Web Service → Docker.
+2. Render → New → Blueprint (uses `render.yaml`) or New → Web Service → Docker. Auto-deploy is off on purpose: the GitHub Actions **Deploy** workflow
+   triggers Render only after the tests pass (create a Deploy Hook in Render → Settings and store it as the `RENDER_DEPLOY_HOOK_URL` secret).
 3. Use a **paid** instance (Starter or above): the free tier has an ephemeral disk, sleeps when idle, and blocks outbound SMTP ports.
 4. Attach a persistent disk mounted at `/app/App_Data` (holds `crm.db` and the Data Protection keys).
 5. Environment variables: `Security__TrustForwardedHeaders=true`, `App__PublicBaseUrl=https://<your public address>`, `Email__*`, `Seed__SampleData=false`.

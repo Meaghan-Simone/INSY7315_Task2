@@ -69,7 +69,7 @@ public class TaskService
     {
         if (i.AssignedToId.HasValue && !await _db.Users.AnyAsync(u => u.Id == i.AssignedToId && u.IsActive && u.Role != UserRole.Staff))
             return Result.Invalid(nameof(TaskInput.AssignedToId), "Tasks can only be assigned to active admins or sales reps.");
-        if (i.LeadId.HasValue && !await _db.Leads.AnyAsync(l => l.Id == i.LeadId))
+        if (i.LeadId.HasValue && !await _db.Leads.VisibleTo(_me).AnyAsync(l => l.Id == i.LeadId))
             return Result.Invalid(nameof(TaskInput.LeadId), "Selected lead does not exist.");
         return Result.Success();
     }
@@ -232,7 +232,7 @@ public class CalendarService
         {
             var exists = i.LinkedId is int lid && i.LinkedType switch
             {
-                "Lead" => await _db.Leads.AnyAsync(l => l.Id == lid),
+                "Lead" => await _db.Leads.VisibleTo(_me).AnyAsync(l => l.Id == lid),
                 "Company" => await _db.Companies.AnyAsync(c => c.Id == lid),
                 "Event" => await _db.Events.AnyAsync(e => e.Id == lid),
                 _ => false

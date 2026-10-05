@@ -1,4 +1,6 @@
 bin/
+Tests/
+.github/
 obj/
 .git/
 .vs/

@@ -31,9 +31,10 @@ public class CompanyService
     {
         var page = Math.Max(1, q.Page); var size = Math.Clamp(q.PageSize, 5, 200);
         var query = Filter(q);
+        var isAdmin = _me.IsAdmin; var myId = _me.Id;
         var total = await query.CountAsync();
         var items = await query.OrderBy(c => c.Name).Skip((page - 1) * size).Take(size)
-            .Select(c => new CompanyListItem(c.Id, c.Name, c.City, c.Industry, c.Size, c.Leads.Count, c.ContactPerson)).ToListAsync();
+            .Select(c => new CompanyListItem(c.Id, c.Name, c.City, c.Industry, c.Size, c.Leads.Count(l => isAdmin || l.AssignedToId == myId), c.ContactPerson)).ToListAsync();
         return new PagedResult<CompanyListItem>(items, page, size, total);
     }
 
@@ -48,7 +49,7 @@ public class CompanyService
         var c = await _db.Companies.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
         if (c is null) return Result<CompanyDetail>.From(Result.NotFound("Company"));
         var myId = _me.Id;
-        var leads = await _db.Leads.AsNoTracking().Where(l => l.CompanyId == id).OrderByDescending(l => (double)l.DealValue)
+        var leads = await _db.Leads.AsNoTracking().VisibleTo(_me).Where(l => l.CompanyId == id).OrderByDescending(l => (double)l.DealValue)
             .Select(l => new LeadListItem(l.Id, l.FirstName + " " + l.Surname, l.JobTitle, l.CompanyId, c.Name, l.Stage, l.DealValue, l.Source,
                 l.AssignedToId, l.AssignedTo != null ? l.AssignedTo.FullName : null, l.NextFollowUp, false, l.Event != null ? l.Event.Name : null)).ToListAsync();
         return Result<CompanyDetail>.Success(new CompanyDetail
@@ -160,10 +161,10 @@ public class EventService
         var today = Clock.LocalToday;
         var rows = await query.OrderByDescending(e => e.StartDate).Skip((page - 1) * size).Take(size).ToListAsync();
         var ids = rows.Select(r => r.Id).ToList();
-        var counts = await _db.Leads.AsNoTracking().Where(l => l.EventId != null && ids.Contains(l.EventId.Value))
+        var counts = await _db.Leads.AsNoTracking().VisibleTo(_me).Where(l => l.EventId != null && ids.Contains(l.EventId.Value))
             .GroupBy(l => l.EventId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync();
         var countMap = counts.Where(c => c.Id.HasValue).ToDictionary(c => c.Id!.Value, c => c.Count);
-        var names = await _db.Leads.AsNoTracking().Where(l => l.EventId != null && ids.Contains(l.EventId.Value))
+        var names = await _db.Leads.AsNoTracking().VisibleTo(_me).Where(l => l.EventId != null && ids.Contains(l.EventId.Value))
             .OrderByDescending(l => l.Id).Select(l => new { l.EventId, l.FirstName, l.Surname }).Take(600).ToListAsync();
         var items = rows.Select(e => new EventListItem(e.Id, e.Name, e.Type, e.StartDate, e.EndDate, e.Location, countMap.GetValueOrDefault(e.Id),
             (e.EndDate ?? e.StartDate).Date >= today,
@@ -180,8 +181,8 @@ public class EventService
     {
         var e = await _db.Events.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
         if (e is null) return Result<EventDetail>.From(Result.NotFound("Event"));
-        var leads = await _db.Leads.AsNoTracking().Where(l => l.EventId == id).Select(l => new { l.Stage, l.DealValue }).ToListAsync();
-        var recent = await _db.Leads.AsNoTracking().Where(l => l.EventId == id).OrderByDescending(l => l.Id).Take(8)
+        var leads = await _db.Leads.AsNoTracking().VisibleTo(_me).Where(l => l.EventId == id).Select(l => new { l.Stage, l.DealValue }).ToListAsync();
+        var recent = await _db.Leads.AsNoTracking().VisibleTo(_me).Where(l => l.EventId == id).OrderByDescending(l => l.Id).Take(8)
             .Select(l => new LeadListItem(l.Id, l.FirstName + " " + l.Surname, l.JobTitle, l.CompanyId, l.Company != null ? l.Company.Name : null, l.Stage,
                 l.DealValue, l.Source, l.AssignedToId, l.AssignedTo != null ? l.AssignedTo.FullName : null, l.NextFollowUp, false, e.Name)).ToListAsync();
         var days = (e.StartDate.Date - Clock.LocalToday).Days;

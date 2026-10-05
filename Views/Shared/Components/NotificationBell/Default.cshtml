@@ -1,6 +1,6 @@
 @model (int Unread, List<NotificationDto> Recent)
 <div class="dropdown">
-  <button class="icon-btn" data-dropdown="notifPanel" title="Notifications" aria-label="Notifications">
+  <button type="button" class="icon-btn" data-dropdown="notifPanel" title="Notifications" aria-haspopup="true" aria-expanded="false" aria-label="@("Notifications" + (Model.Unread > 0 ? ", " + Model.Unread + " unread" : ""))">
     <i class="bi bi-bell"></i>@if (Model.Unread > 0){<span class="dot notif-dot"></span>}
   </button>
   <div class="dropdown-panel" id="notifPanel">
