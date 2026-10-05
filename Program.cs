@@ -189,6 +189,9 @@ app.UseAuthorization();
 app.UseMiddleware<MustChangePasswordMiddleware>();
 
 app.MapControllerRoute(name: "default", pattern: "{controller=Home}/{action=Index}/{id?}");
+// Lightweight liveness probe for the host (Render) and the deployment pipeline. Touches the database so a broken connection is visible.
+app.MapGet("/healthz", async (UncoveringGreatnessCRM.Data.AppDbContext db) =>
+    await db.Database.CanConnectAsync() ? Results.Text("ok") : Results.StatusCode(503)).AllowAnonymous();
 
 await DbSeeder.InitialiseAsync(app.Services);
 
@@ -203,3 +206,6 @@ await DbSeeder.InitialiseAsync(app.Services);
         startupLog.LogWarning("App:PublicBaseUrl is empty: links in emails and the form webhook URL will use the request host. Set it to your public HTTPS address.");
 }
 app.Run();
+
+// Makes the entry point visible to the integration-test project (WebApplicationFactory<Program>).
+public partial class Program { }
