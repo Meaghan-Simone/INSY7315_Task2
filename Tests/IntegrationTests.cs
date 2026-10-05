@@ -173,6 +173,20 @@ public class UserManagementApiTests
     }
 
     [Fact]
+    public async Task Audit_log_filter_by_action_works_and_unfiltered_list_is_not_empty()
+    {
+        var admin = await _f.ClientForAsync(CrmFactory.AdminEmail); // signing in writes LoginSuccess entries
+        var all = await admin.GetFromJsonAsync<JsonElement>("/api/v1/audit");
+        Assert.True(all.GetProperty("totalCount").GetInt32() >= 1);
+
+        var filtered = await admin.GetFromJsonAsync<JsonElement>("/api/v1/audit?action=LoginSuccess");
+        Assert.True(filtered.GetProperty("totalCount").GetInt32() >= 1);
+
+        var none = await admin.GetFromJsonAsync<JsonElement>("/api/v1/audit?action=NoSuchAction");
+        Assert.Equal(0, none.GetProperty("totalCount").GetInt32());
+    }
+
+    [Fact]
     public async Task Admin_cannot_delete_their_own_account()
     {
         var admin = await _f.ClientForAsync(CrmFactory.AdminEmail);
