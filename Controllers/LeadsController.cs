@@ -16,6 +16,10 @@ public class LeadsController : AppController
     public LeadsController(LeadService leads, CompanyService companies, EventService events, UserService users)
     { _leads = leads; _companies = companies; _events = events; _users = users; }
 
+    /// <summary>After handing a lead to someone else a rep can no longer open it, so send them to their list instead of a 404.</summary>
+    private async Task<IActionResult> ToLeadOrListAsync(int id) =>
+        (await _leads.GetAsync(id)).Succeeded ? RedirectToAction(nameof(Details), new { id }) : RedirectToAction(nameof(Index));
+
     private async Task LoadLookupsAsync()
     {
         ViewBag.Companies = await _companies.OptionsAsync();
@@ -60,7 +64,7 @@ public class LeadsController : AppController
         if (ModelState.IsValid)
         {
             var r = await _leads.CreateAsync(input);
-            if (r.Succeeded) { Flash("Lead created."); return RedirectToAction(nameof(Details), new { id = r.Value }); }
+            if (r.Succeeded) { Flash("Lead created."); return await ToLeadOrListAsync(r.Value); }
             AddErrors(r);
         }
         await LoadLookupsAsync();
@@ -83,7 +87,7 @@ public class LeadsController : AppController
         if (ModelState.IsValid)
         {
             var r = await _leads.UpdateAsync(id, input);
-            if (r.Succeeded) { Flash("Lead updated."); return RedirectToAction(nameof(Details), new { id }); }
+            if (r.Succeeded) { Flash("Lead updated."); return await ToLeadOrListAsync(id); }
             if (Denied(r) is { } d) return d;
             AddErrors(r);
         }
@@ -124,7 +128,7 @@ public class LeadsController : AppController
     {
         var r = await _leads.AssignAsync(id, userId);
         Flash(r.Succeeded ? "Lead reassigned." : r.Error ?? "Could not reassign.", r.Succeeded ? "success" : "error");
-        return RedirectToAction(nameof(Details), new { id });
+        return await ToLeadOrListAsync(id);
     }
 
     [HttpPost, Authorize(Policy = "CanWrite")]
