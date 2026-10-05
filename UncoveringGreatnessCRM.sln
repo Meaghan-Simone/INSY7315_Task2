@@ -1,0 +1,25 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UncoveringGreatnessCRM", "UncoveringGreatnessCRM.csproj", "{15EF0239-285F-4800-8ADC-8D8A3ACD6292}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{15EF0239-285F-4800-8ADC-8D8A3ACD6292}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{15EF0239-285F-4800-8ADC-8D8A3ACD6292}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{15EF0239-285F-4800-8ADC-8D8A3ACD6292}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{15EF0239-285F-4800-8ADC-8D8A3ACD6292}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1D6097C3-954B-40F9-AEBF-9345C084CB39}
+	EndGlobalSection
+EndGlobal
