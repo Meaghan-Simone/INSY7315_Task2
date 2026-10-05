@@ -1,0 +1,15 @@
+# Run the whole app locally in a container that behaves like production:  docker compose up --build
+# Then open http://localhost:8080  (sign in with the seeded users from appsettings.json, e.g. admin@uncoveringgreatness.co.za / P@ssword4321)
+services:
+  crm:
+    build: .
+    ports:
+      - "8080:10000"            # your computer's port 8080 -> the app's port 10000 inside the container
+    environment:
+      PORT: "10000"
+      ASPNETCORE_ENVIRONMENT: Development   # shows sample data and the sample passwords; use Production only with real secrets
+      Seed__SampleData: "true"
+    volumes:
+      - crm-data:/app/App_Data   # keeps the database and login keys between restarts (same idea as Render's disk)
+volumes:
+  crm-data:
