@@ -1,0 +1,7 @@
+bin/
+obj/
+.git/
+.vs/
+App_Data/*.db
+App_Data/keys/
+*.user

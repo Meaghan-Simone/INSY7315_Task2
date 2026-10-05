@@ -1,0 +1,36 @@
+# Render blueprint. A persistent disk and outbound SMTP both need a PAID instance (starter or higher).
+services:
+  - type: web
+    name: uncovering-greatness-crm
+    runtime: docker
+    plan: starter
+    healthCheckPath: /Account/Login
+    disk:
+      name: crm-data
+      mountPath: /app/App_Data
+      sizeGB: 1
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: Security__TrustForwardedHeaders      # required behind Render's HTTPS proxy
+        value: "true"
+      - key: Seed__SampleData
+        value: "false"
+      - key: Seed__MustChangePassword
+        value: "true"
+      - key: App__PublicBaseUrl                   # e.g. https://uncovering-greatness-crm.onrender.com or your own domain
+        sync: false
+      - key: Email__Host
+        sync: false
+      - key: Email__Port
+        value: "587"
+      - key: Email__UseSsl
+        value: "true"
+      - key: Email__Username
+        sync: false
+      - key: Email__Password
+        sync: false
+      - key: Email__FromAddress
+        sync: false
+      - key: Email__FromName
+        value: Uncovering Greatness
