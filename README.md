@@ -134,7 +134,14 @@ second, assigned to your team and with the owner notified. This is push, not pol
   covers the web UI, the API, search, dashboard figures, company/event pages, pipeline and CSV export. A lead that is not yours returns *not found*.
 * New leads created by an admin with no owner are auto-assigned to the sales rep with the fewest open leads. A rep who creates a lead keeps it (assigned to them),
   and if a rep hands a lead to a colleague they are taken back to their list because they can no longer open it.
-* A background worker creates in-app reminders for due/overdue follow-ups and tasks (once per item per day).
+* **Reminders and notifications** (`Services/ReminderServices.cs`): a background worker runs every few minutes and creates in-app notifications for
+  lead follow-ups, tasks (due today, overdue, and a heads-up the day before) and calendar entries starting within the next hour (for the owner and everyone
+  the entry is shared with). Each reminder has a dedupe key, so it is created once. Everyone then receives **one summary email** of their new reminders.
+  The bell and badge refresh every minute without a page reload.
+  * Needs the `Email__*` settings for real emails; without them the emails are only written to the log.
+  * Settings (all optional, environment variable form `Reminders__Name`): `Enabled` (true), `EmailEnabled` (true), `IntervalMinutes` (5),
+    `ActiveFromHour` (6) and `ActiveToHour` (21) in South African time so nobody is emailed at night, `EventLeadMinutes` (60).
+  * Email reminders go to every active user's sign-in email address.
 * Lead follow-up dates appear on the assignee's calendar automatically; calendar events are private, shared or team-wide.
 * Campaigns send in the background, personalise `{{FirstName}}`, `{{FullName}}`, `{{Company}}`, track opens, and resume after a restart.
 * Dates entered by users are treated as South African time (SAST); system timestamps are stored in UTC.
