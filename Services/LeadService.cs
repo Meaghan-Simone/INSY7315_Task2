@@ -25,7 +25,7 @@ public class LeadService
     // ------------------------------------------------------------ queries
     private IQueryable<Lead> Filter(LeadQuery q)
     {
-        var query = _db.Leads.AsNoTracking().AsQueryable();
+        var query = _db.Leads.AsNoTracking().VisibleTo(_me);
         if (!string.IsNullOrWhiteSpace(q.Q))
         {
             var t = q.Q.Trim();
@@ -76,16 +76,17 @@ public class LeadService
     public async Task<(int All, int Mine, int FollowUp, int Starred)> TabCountsAsync()
     {
         var myId = _me.Id; var end = Clock.LocalToday.AddDays(1);
-        var all = await _db.Leads.CountAsync();
-        var mine = await _db.Leads.CountAsync(l => l.AssignedToId == myId);
-        var fu = await _db.Leads.CountAsync(l => l.NextFollowUp != null && l.NextFollowUp < end && l.Stage != LeadStage.ClosedWon && l.Stage != LeadStage.ClosedLost);
+        var visible = _db.Leads.VisibleTo(_me);
+        var all = await visible.CountAsync();
+        var mine = await visible.CountAsync(l => l.AssignedToId == myId);
+        var fu = await visible.CountAsync(l => l.NextFollowUp != null && l.NextFollowUp < end && l.Stage != LeadStage.ClosedWon && l.Stage != LeadStage.ClosedLost);
         var starred = await _db.LeadStars.CountAsync(s => s.UserId == myId);
         return (all, mine, fu, starred);
     }
 
     public async Task<Result<LeadDetail>> GetAsync(int id)
     {
-        var l = await _db.Leads.AsNoTracking().Include(x => x.Company).Include(x => x.Event).Include(x => x.AssignedTo)
+        var l = await _db.Leads.AsNoTracking().VisibleTo(_me).Include(x => x.Company).Include(x => x.Event).Include(x => x.AssignedTo)
             .FirstOrDefaultAsync(x => x.Id == id);
         if (l is null) return Result<LeadDetail>.From(Result.NotFound("Lead"));
         var myId = _me.Id;
@@ -110,7 +111,7 @@ public class LeadService
 
     public async Task<Result<LeadInput>> GetInputAsync(int id)
     {
-        var l = await _db.Leads.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+        var l = await _db.Leads.AsNoTracking().VisibleTo(_me).FirstOrDefaultAsync(x => x.Id == id);
         if (l is null) return Result<LeadInput>.From(Result.NotFound("Lead"));
         if (!CanEdit(l)) return Result<LeadInput>.From(Result.Forbidden("You can only edit leads assigned to you."));
         return Result<LeadInput>.Success(new LeadInput
@@ -184,7 +185,8 @@ public class LeadService
         var lead = new Lead { CreatedById = _me.Id };
         Apply(lead, input);
         SetStage(lead, input.Stage);
-        lead.AssignedToId = input.AssignedToId ?? await LeastLoadedRepAsync();
+        // Admins hand unowned leads to the least-loaded rep; anyone else keeps the lead they just created (they could not see it otherwise).
+        lead.AssignedToId = input.AssignedToId ?? (_me.IsAdmin ? await LeastLoadedRepAsync() : _me.Id);
         lead.RegistrationDate ??= Clock.LocalToday;
         _db.Leads.Add(lead);
         await _db.SaveChangesAsync();
@@ -205,7 +207,7 @@ public class LeadService
 
     public async Task<Result> UpdateAsync(int id, LeadInput input)
     {
-        var lead = await _db.Leads.FirstOrDefaultAsync(l => l.Id == id);
+        var lead = await _db.Leads.VisibleTo(_me).FirstOrDefaultAsync(l => l.Id == id);
         if (lead is null) return Result.NotFound("Lead");
         if (!CanEdit(lead)) return Result.Forbidden("You can only edit leads assigned to you.");
         var check = await ValidateReferencesAsync(input, id);
@@ -256,7 +258,7 @@ public class LeadService
 
     public async Task<Result> ChangeStageAsync(int id, LeadStage stage)
     {
-        var lead = await _db.Leads.FirstOrDefaultAsync(l => l.Id == id);
+        var lead = await _db.Leads.VisibleTo(_me).FirstOrDefaultAsync(l => l.Id == id);
         if (lead is null) return Result.NotFound("Lead");
         if (!CanEdit(lead)) return Result.Forbidden("You can only move leads assigned to you.");
         if (!Enum.IsDefined(stage)) return Result.Invalid(nameof(StageInput.Stage), "Unknown stage.");
@@ -273,7 +275,7 @@ public class LeadService
 
     public async Task<Result> AssignAsync(int id, int? userId)
     {
-        var lead = await _db.Leads.FirstOrDefaultAsync(l => l.Id == id);
+        var lead = await _db.Leads.VisibleTo(_me).FirstOrDefaultAsync(l => l.Id == id);
         if (lead is null) return Result.NotFound("Lead");
         if (!CanEdit(lead)) return Result.Forbidden("You can only reassign leads assigned to you.");
         if (userId.HasValue && !await _db.Users.AnyAsync(u => u.Id == userId && u.IsActive && u.Role != UserRole.Staff))
@@ -289,7 +291,7 @@ public class LeadService
     public async Task<Result> DeleteAsync(int id)
     {
         if (!_me.IsAdmin) return Result.Forbidden("Only admins can delete leads.");
-        var lead = await _db.Leads.FirstOrDefaultAsync(l => l.Id == id);
+        var lead = await _db.Leads.VisibleTo(_me).FirstOrDefaultAsync(l => l.Id == id);
         if (lead is null) return Result.NotFound("Lead");
         var name = lead.FullName;
         _db.Leads.Remove(lead);
@@ -300,7 +302,7 @@ public class LeadService
 
     public async Task<Result<NoteDto>> AddNoteAsync(int id, string body)
     {
-        var lead = await _db.Leads.FirstOrDefaultAsync(l => l.Id == id);
+        var lead = await _db.Leads.VisibleTo(_me).FirstOrDefaultAsync(l => l.Id == id);
         if (lead is null) return Result<NoteDto>.From(Result.NotFound("Lead"));
         if (!CanEdit(lead)) return Result<NoteDto>.From(Result.Forbidden("You can only add notes to leads assigned to you."));
         var note = new LeadNote { LeadId = id, AuthorId = _me.Id, Body = body.Trim() };
@@ -313,7 +315,7 @@ public class LeadService
 
     public async Task<Result> LogCallAsync(int id, CallInput input)
     {
-        var lead = await _db.Leads.FirstOrDefaultAsync(l => l.Id == id);
+        var lead = await _db.Leads.VisibleTo(_me).FirstOrDefaultAsync(l => l.Id == id);
         if (lead is null) return Result.NotFound("Lead");
         if (!CanEdit(lead)) return Result.Forbidden("You can only log calls on leads assigned to you.");
         _db.LeadActivities.Add(new LeadActivity
@@ -331,7 +333,7 @@ public class LeadService
 
     public async Task<Result<bool>> ToggleStarAsync(int id)
     {
-        if (!await _db.Leads.AnyAsync(l => l.Id == id)) return Result<bool>.From(Result.NotFound("Lead"));
+        if (!await _db.Leads.VisibleTo(_me).AnyAsync(l => l.Id == id)) return Result<bool>.From(Result.NotFound("Lead"));
         var myId = _me.Id;
         var star = await _db.LeadStars.FirstOrDefaultAsync(s => s.LeadId == id && s.UserId == myId);
         if (star is null) { _db.LeadStars.Add(new LeadStar { LeadId = id, UserId = myId }); await _db.SaveChangesAsync(); return Result<bool>.Success(true); }
