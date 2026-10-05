@@ -3,7 +3,7 @@ services:
   - type: web
     name: uncovering-greatness-crm
     runtime: docker
-    plan: starter
+    plan: free
     autoDeploy: false          # deployments are triggered by the GitHub Actions pipeline (.github/workflows/cd.yml) after the tests pass
     healthCheckPath: /healthz
     disk:
