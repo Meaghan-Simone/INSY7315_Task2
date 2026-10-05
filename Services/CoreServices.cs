@@ -61,7 +61,8 @@ public class AuditService : IAuditService
 
 public interface INotificationService
 {
-    Task NotifyAsync(int userId, NotificationType type, string title, string? body, string? link, string? dedupeKey = null);
+    /// <summary>Creates a notification. Returns false when it was skipped because the same dedupe key already exists for that user.</summary>
+    Task<bool> NotifyAsync(int userId, NotificationType type, string title, string? body, string? link, string? dedupeKey = null);
     Task NotifyManyAsync(IEnumerable<int> userIds, NotificationType type, string title, string? body, string? link, string? dedupeKey = null);
     Task<PagedResult<NotificationDto>> ListAsync(string? filter, int page, int pageSize);
     Task<(int Unread, List<NotificationDto> Recent)> BellAsync();
@@ -75,13 +76,13 @@ public class NotificationService : INotificationService
     private readonly ICurrentUser _me;
     public NotificationService(AppDbContext db, ICurrentUser me) { _db = db; _me = me; }
 
-    public async Task NotifyAsync(int userId, NotificationType type, string title, string? body, string? link, string? dedupeKey = null)
+    public async Task<bool> NotifyAsync(int userId, NotificationType type, string title, string? body, string? link, string? dedupeKey = null)
     {
-        if (dedupeKey != null && await _db.Notifications.AnyAsync(n => n.UserId == userId && n.DedupeKey == dedupeKey)) return;
+        if (dedupeKey != null && await _db.Notifications.AnyAsync(n => n.UserId == userId && n.DedupeKey == dedupeKey)) return false;
         var n = new Notification { UserId = userId, Type = type, Title = title, Body = body, LinkUrl = link, DedupeKey = dedupeKey };
         _db.Notifications.Add(n);
-        try { await _db.SaveChangesAsync(); }
-        catch (DbUpdateException) when (dedupeKey != null) { _db.Entry(n).State = EntityState.Detached; }
+        try { await _db.SaveChangesAsync(); return true; }
+        catch (DbUpdateException) when (dedupeKey != null) { _db.Entry(n).State = EntityState.Detached; return false; }
     }
 
     public async Task NotifyManyAsync(IEnumerable<int> userIds, NotificationType type, string title, string? body, string? link, string? dedupeKey = null)
@@ -97,7 +98,7 @@ public class NotificationService : INotificationService
         q = filter switch
         {
             "unread" => q.Where(n => !n.IsRead),
-            "followups" => q.Where(n => n.Type == NotificationType.FollowUp || n.Type == NotificationType.TaskDue),
+            "followups" => q.Where(n => n.Type == NotificationType.FollowUp || n.Type == NotificationType.TaskDue || n.Type == NotificationType.CalendarReminder),
             "deals" => q.Where(n => n.Type == NotificationType.DealWon || n.Type == NotificationType.LeadAssigned),
             _ => q
         };

@@ -13,7 +13,7 @@ public enum ActivityType { Created = 0, Updated = 1, StageChanged = 2, Assigned 
 public enum FormProvider { Tally = 0, GoogleForms = 1, Generic = 2 }
 public enum AssignmentMode { RoundRobin = 0, LeastBusy = 1, SpecificUser = 2 }
 public enum SubmissionStatus { Created = 0, Duplicate = 1, Rejected = 2, Error = 3 }
-public enum NotificationType { FollowUp = 0, DealWon = 1, LeadAssigned = 2, TaskDue = 3, System = 4 }
+public enum NotificationType { FollowUp = 0, DealWon = 1, LeadAssigned = 2, TaskDue = 3, System = 4, CalendarReminder = 5 }
 
 public static class Roles
 {

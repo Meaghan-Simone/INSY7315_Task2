@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded', function () {
   function post(url, body) {
     var headers = { 'RequestVerificationToken': csrf, 'X-Requested-With': 'XMLHttpRequest' };
     var opts = { method: 'POST', headers: headers, credentials: 'same-origin' };
+    // Marking a notification read happens as the browser follows its link; keepalive lets the request finish after the page changes.
+    if (url.indexOf('/Notifications/MarkRead') === 0) opts.keepalive = true;
     if (body !== undefined) { headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
     return fetch(url, opts).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (j) { j.status = r.status; j.httpOk = r.ok; return j; });
@@ -127,6 +129,28 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     });
   });
+
+  // Live bell: ask the server once a minute, update the badge and pop a message when something new arrives
+  var bellBtn = document.querySelector('[data-dropdown="notifPanel"]'), lastUnread = null;
+  function setBadge(n) {
+    if (!bellBtn) return;
+    var dot = bellBtn.querySelector('.notif-dot');
+    if (n > 0 && !dot) { dot = document.createElement('span'); dot.className = 'dot notif-dot'; bellBtn.appendChild(dot); }
+    if (n === 0 && dot) dot.remove();
+    bellBtn.setAttribute('aria-label', 'Notifications' + (n > 0 ? ', ' + n + ' unread' : ''));
+  }
+  function pollNotifications() {
+    if (document.hidden) return;
+    fetch('/Notifications/Poll', { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        if (!j) return;
+        setBadge(j.unread);
+        if (lastUnread !== null && j.unread > lastUnread && j.latest && j.latest.length) toast(j.latest[0].title + (j.unread > lastUnread + 1 ? ' (and ' + (j.unread - lastUnread - 1) + ' more)' : ''), 'success');
+        lastUnread = j.unread;
+      }).catch(function () { /* offline or signed out: try again next minute */ });
+  }
+  if (bellBtn) { pollNotifications(); setInterval(pollNotifications, 60000); }
 
   // Pipeline drag & drop -> moves stage via AJAX
   var dragged = null;

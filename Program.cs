@@ -39,6 +39,7 @@ builder.Services.AddDataProtection().SetApplicationName("UncoveringGreatnessCRM"
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddMemoryCache();
 builder.Services.Configure<EmailOptions>(cfg.GetSection("Email"));
+builder.Services.Configure<ReminderOptions>(cfg.GetSection("Reminders"));
 if (!string.IsNullOrWhiteSpace(cfg["Email:Host"])) builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 else builder.Services.AddScoped<IEmailSender, LoggingEmailSender>();
 

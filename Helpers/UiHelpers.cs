@@ -122,6 +122,7 @@ public static class UiHelpers
         NotificationType.DealWon => "bi-check2-circle",
         NotificationType.LeadAssigned => "bi-person-plus",
         NotificationType.TaskDue => "bi-check2-square",
+        NotificationType.CalendarReminder => "bi-calendar-event",
         _ => "bi-info-circle"
     };
 
@@ -131,6 +132,7 @@ public static class UiHelpers
         NotificationType.DealWon => ("var(--green-100)", "var(--green-600)"),
         NotificationType.LeadAssigned => ("var(--blue-100)", "var(--blue-600)"),
         NotificationType.TaskDue => ("var(--violet-100)", "var(--violet-600)"),
+        NotificationType.CalendarReminder => ("var(--blue-100)", "var(--blue-600)"),
         _ => ("var(--gold-100)", "var(--gold-700)")
     };
 }
