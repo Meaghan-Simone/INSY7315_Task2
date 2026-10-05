@@ -1,0 +1,49 @@
+@model LeadInput
+@{
+    var companies = (List<Option>)ViewBag.Companies; var events = (List<Option>)ViewBag.Events; var users = (List<UserOption>)ViewBag.Users;
+}
+<partial name="_ValidationSummary" />
+<div class="form-section">
+  <h4>Contact</h4><p class="hint">Who is this person?</p>
+  <div class="field-row">
+    <div class="field"><label asp-for="FirstName">First name *</label><input asp-for="FirstName" type="text" maxlength="100"><span asp-validation-for="FirstName" class="field-error"></span></div>
+    <div class="field"><label asp-for="Surname">Surname *</label><input asp-for="Surname" type="text" maxlength="100"><span asp-validation-for="Surname" class="field-error"></span></div>
+  </div>
+  <div class="field-row">
+    <div class="field"><label asp-for="Email">Email *</label><input asp-for="Email" type="email" maxlength="200"><span asp-validation-for="Email" class="field-error"></span></div>
+    <div class="field"><label asp-for="Phone">Phone</label><input asp-for="Phone" type="tel" maxlength="40"><span asp-validation-for="Phone" class="field-error"></span></div>
+  </div>
+  <div class="field-row">
+    <div class="field"><label asp-for="JobTitle">Job title</label><input asp-for="JobTitle" type="text" maxlength="150"></div>
+    <div class="field"><label asp-for="LinkedInUrl">LinkedIn URL</label><input asp-for="LinkedInUrl" type="url" maxlength="300" placeholder="https://linkedin.com/in/…"><span asp-validation-for="LinkedInUrl" class="field-error"></span></div>
+  </div>
+  <div class="field-row">
+    <div class="field"><label asp-for="City">City</label><input asp-for="City" type="text" maxlength="100"></div>
+    <div class="field"><label asp-for="Province">Province</label><input asp-for="Province" type="text" maxlength="60"></div>
+  </div>
+  <div class="field"><label asp-for="PreferredContact">Preferred contact method</label><div class="select-wrap"><select asp-for="PreferredContact"><option value="">No preference</option><option>Email</option><option>Phone</option><option>WhatsApp</option></select></div></div>
+</div>
+<div class="form-section">
+  <h4>Company &amp; source</h4><p class="hint">Where did this lead come from?</p>
+  <div class="field-row">
+    <div class="field"><label asp-for="CompanyId">Company</label><div class="select-wrap"><select asp-for="CompanyId"><option value="">— None —</option>@foreach (var c in companies){<option value="@c.Id" selected="@(Model.CompanyId == c.Id)">@c.Name</option>}</select></div></div>
+    <div class="field"><label asp-for="Industry">Industry</label><input asp-for="Industry" type="text" maxlength="150"></div>
+  </div>
+  <div class="field-row">
+    <div class="field"><label asp-for="EventId">Registered via event</label><div class="select-wrap"><select asp-for="EventId"><option value="">— None —</option>@foreach (var e in events){<option value="@e.Id" selected="@(Model.EventId == e.Id)">@e.Name</option>}</select></div></div>
+    <div class="field"><label asp-for="Source">Source</label><div class="select-wrap"><select asp-for="Source">@foreach (var s in Enum.GetValues<LeadSource>()){<option value="@s" selected="@(Model.Source == s)">@s.Label()</option>}</select></div></div>
+  </div>
+  <div class="field"><label asp-for="RegistrationDate">Registration date</label><input asp-for="RegistrationDate" type="date"></div>
+</div>
+<div class="form-section">
+  <h4>Sales</h4><p class="hint">Stage, value and ownership.</p>
+  <div class="field-row">
+    <div class="field"><label asp-for="Stage">Stage</label><div class="select-wrap"><select asp-for="Stage">@foreach (var s in Enum.GetValues<LeadStage>()){<option value="@s" selected="@(Model.Stage == s)">@s.Label()</option>}</select></div></div>
+    <div class="field"><label asp-for="DealValue">Deal value (ZAR)</label><input asp-for="DealValue" type="number" step="0.01" min="0"><span asp-validation-for="DealValue" class="field-error"></span></div>
+  </div>
+  <div class="field-row">
+    <div class="field"><label asp-for="AssignedToId">Owner</label><div class="select-wrap"><select asp-for="AssignedToId"><option value="">Auto-assign to least busy rep</option>@foreach (var u in users){<option value="@u.Id" selected="@(Model.AssignedToId == u.Id)">@u.FullName</option>}</select></div></div>
+    <div class="field"><label asp-for="NextFollowUp">Next follow-up</label><input asp-for="NextFollowUp" type="date"></div>
+  </div>
+  <div class="field"><label asp-for="Tags">Tags</label><input asp-for="Tags" type="text" maxlength="300" placeholder="Enterprise, Priority"><p class="field-help">Comma separated, up to 10.</p></div>
+</div>

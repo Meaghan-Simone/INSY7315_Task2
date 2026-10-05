@@ -1,0 +1,4 @@
+@{ Layout = "_AuthLayout"; ViewData["Title"] = "Link expired"; }
+<h2 style="font-size:22px;margin-bottom:6px">This link is no longer valid</h2>
+<p style="color:var(--text-500);font-size:13.5px;margin-bottom:24px">Reset links expire after one hour and stop working once used. Request a fresh one to continue.</p>
+<a asp-action="ForgotPassword" class="btn btn-green btn-block">Request a new link</a>

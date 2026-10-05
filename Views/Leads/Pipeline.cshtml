@@ -1,0 +1,39 @@
+@model PipelineVm
+@{
+    ViewData["Title"] = "Pipeline"; ViewData["Eyebrow"] = "Sales";
+    var events = (List<Option>)ViewBag.Events; var users = (List<UserOption>)ViewBag.Users;
+    int? evId = ViewBag.EventId; int? asg = ViewBag.AssignedToId;
+}
+<div class="page-head">
+  <div><h2>Sales pipeline</h2><p>@Model.ActiveDeals active deal@(Model.ActiveDeals == 1 ? "" : "s")@(Model.CanMove ? " · drag a card to change its stage" : "")</p></div>
+  <div class="page-actions">@if (Me.CanWrite){<a asp-action="Create" class="btn btn-green"><i class="bi bi-plus-lg"></i> New lead</a>}</div>
+</div>
+<form method="get" class="toolbar">
+  <div class="search"><i class="bi bi-search"></i><input type="text" name="q" value="@ViewBag.Query" placeholder="Search deals" maxlength="100"></div>
+  <div class="select-wrap"><select name="eventId" data-autosubmit><option value="">All events</option>@foreach (var e in events){<option value="@e.Id" selected="@(evId == e.Id)">@e.Name</option>}</select></div>
+  <div class="select-wrap"><select name="assignedToId" data-autosubmit><option value="">Any owner</option>@foreach (var u in users){<option value="@u.Id" selected="@(asg == u.Id)">@u.FullName</option>}</select></div>
+  <button class="btn btn-outline btn-sm" type="submit">Filter</button>
+</form>
+<div class="pipeline-scroller">
+  @foreach (var col in Model.Columns)
+  {
+    <div class="pipeline-col">
+      <div class="pipeline-col-head">
+        <div class="row"><strong style="color:@UiHelpers.StageColor(col.Stage)">@col.Stage.Label()</strong><span class="count">@col.Count</span></div>
+        <div class="mono" style="font-size:12px;color:var(--text-500);margin-top:4px">@UiHelpers.Money(col.Total)</div>
+      </div>
+      <div class="pipeline-cards" data-stage="@((int)col.Stage)">
+        @foreach (var c in col.Cards)
+        {
+          <div class="deal-card" draggable="@(Model.CanMove ? "true" : "false")" data-lead="@c.Id">
+            <a class="name" asp-action="Details" asp-route-id="@c.Id">@c.Name</a>
+            <div class="org">@(c.Company ?? "No company")</div>
+            <div class="foot"><span class="value">@UiHelpers.Money(c.Value)</span>@if (c.AssignedToName != null){<span class="avatar" style="width:24px;height:24px;font-size:10px" title="@c.AssignedToName">@UiHelpers.Initials(c.AssignedToName)</span>}</div>
+          </div>
+        }
+        @if (col.Count > col.Cards.Count){<div class="text-muted" style="font-size:12px;text-align:center">+ @(col.Count - col.Cards.Count) more — see the <a asp-action="Index" asp-route-stage="@((int)col.Stage)" style="text-decoration:underline">leads list</a></div>}
+        @if (col.Count == 0){<div class="text-muted" style="font-size:12px;text-align:center;padding:10px">No leads</div>}
+      </div>
+    </div>
+  }
+</div>

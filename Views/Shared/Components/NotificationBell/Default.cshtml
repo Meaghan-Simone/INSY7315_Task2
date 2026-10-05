@@ -1,0 +1,24 @@
+@model (int Unread, List<NotificationDto> Recent)
+<div class="dropdown">
+  <button class="icon-btn" data-dropdown="notifPanel" title="Notifications" aria-label="Notifications">
+    <i class="bi bi-bell"></i>@if (Model.Unread > 0){<span class="dot notif-dot"></span>}
+  </button>
+  <div class="dropdown-panel" id="notifPanel">
+    <div class="dropdown-head"><strong>Notifications@(Model.Unread > 0 ? $" ({Model.Unread})" : "")</strong><a href="#" data-mark-all>Mark all read</a></div>
+    <div class="dropdown-list">
+      @if (Model.Recent.Count == 0)
+      {
+        <div class="dropdown-item"><div><strong>You're all caught up</strong><p>New follow-ups and assignments will show up here.</p></div></div>
+      }
+      @foreach (var n in Model.Recent)
+      {
+        var (bg, fg) = UiHelpers.NotificationColors(n.Type);
+        <a class="dropdown-item @(n.IsRead ? "" : "unread")" href="@(n.LinkUrl ?? Url.Action("Index", "Notifications"))" data-notif="@n.Id" style="color:inherit">
+          <span class="t-icon" style="background:@bg;color:@fg"><i class="bi @UiHelpers.NotificationIcon(n.Type)"></i></span>
+          <div><strong>@n.Title</strong><p>@n.Body</p></div>
+        </a>
+      }
+    </div>
+    <div class="dropdown-foot"><a asp-controller="Notifications" asp-action="Index">View all notifications</a></div>
+  </div>
+</div>

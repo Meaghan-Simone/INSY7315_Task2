@@ -1,0 +1,41 @@
+@model PagedResult<CompanyListItem>
+@{
+    ViewData["Title"] = "Companies"; ViewData["Eyebrow"] = "Manage";
+    var q = (CompanyQuery)ViewBag.Query; var industries = (List<string>)ViewBag.Industries;
+}
+<div class="page-head">
+  <div><h2>Companies</h2><p>Organisations your leads belong to.</p></div>
+  <div class="page-actions">
+    <a class="btn btn-outline" href="@Url.Action("Export", new { q = q.Q, industry = q.Industry, size = q.Size })"><i class="bi bi-download"></i> Export CSV</a>
+    @if (Me.CanWrite){<a asp-action="Create" class="btn btn-green"><i class="bi bi-plus-lg"></i> New company</a>}
+  </div>
+</div>
+<div class="card">
+  <form method="get" class="toolbar" style="padding:16px 22px 0">
+    <div class="search"><i class="bi bi-search"></i><input type="text" name="q" value="@q.Q" placeholder="Search name, city or contact" maxlength="100"></div>
+    <div class="select-wrap"><select name="industry" data-autosubmit><option value="">All industries</option>@foreach (var i in industries){<option selected="@(q.Industry == i)">@i</option>}</select></div>
+    <div class="select-wrap"><select name="size" data-autosubmit><option value="">Any size</option>@foreach (var s in CompanySizes.All){<option selected="@(q.Size == s)">@s</option>}</select></div>
+    <button class="btn btn-outline btn-sm" type="submit">Search</button>
+    @if (!string.IsNullOrEmpty(q.Q) || !string.IsNullOrEmpty(q.Industry) || !string.IsNullOrEmpty(q.Size)){<a asp-action="Index" class="btn btn-ghost btn-sm">Clear</a>}
+  </form>
+  @if (Model.Items.Count == 0)
+  {
+    <div class="empty-state"><i class="bi bi-building"></i><h4>No companies found</h4><p>Try a different search@(Me.CanWrite ? " or add a company" : "").</p></div>
+  }
+  else
+  {
+    <div class="table-wrap"><table>
+      <thead><tr><th>Company</th><th>Industry</th><th>Size</th><th>Contact</th><th class="text-right">Leads</th></tr></thead>
+      <tbody>
+      @foreach (var c in Model.Items)
+      {
+        <tr class="row-link" data-href="@Url.Action("Details", new { id = c.Id })">
+          <td><div class="cell-name"><span class="avatar">@UiHelpers.Initials(c.Name)</span><div><strong>@c.Name</strong><span>@c.City</span></div></div></td>
+          <td class="text-muted">@(c.Industry ?? "—")</td><td class="text-muted">@(c.Size ?? "—")</td><td class="text-muted">@(c.ContactPerson ?? "—")</td>
+          <td class="text-right"><span class="chip">@c.LeadCount</span></td>
+        </tr>
+      }
+      </tbody></table></div>
+    <partial name="_Pager" model="(Model.Page, Model.TotalPages, Model.TotalCount, Model.PageSize)" />
+  }
+</div>

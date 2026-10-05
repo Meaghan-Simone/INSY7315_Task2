@@ -1,0 +1,25 @@
+@model PagedResult<CampaignListItem>
+@{ ViewData["Title"] = "Campaigns"; ViewData["Eyebrow"] = "Marketing"; string? q = ViewBag.Q; CampaignStatus? status = ViewBag.Status; }
+<div class="page-head"><div><h2>Email campaigns</h2><p>Reach the people who registered for your events.</p></div>
+  <div class="page-actions"><a asp-action="Create" class="btn btn-green"><i class="bi bi-plus-lg"></i> New campaign</a></div></div>
+<div class="card">
+  <form method="get" class="toolbar" style="padding:16px 22px 0">
+    <div class="search"><i class="bi bi-search"></i><input type="text" name="q" value="@q" placeholder="Search campaigns" maxlength="100"></div>
+    <div class="select-wrap"><select name="status" data-autosubmit><option value="">All statuses</option>@foreach (var s in Enum.GetValues<CampaignStatus>()){<option value="@s" selected="@(status == s)">@s.Label()</option>}</select></div>
+    <button class="btn btn-outline btn-sm" type="submit">Search</button>
+  </form>
+  @if (Model.Items.Count == 0){<div class="empty-state"><i class="bi bi-envelope-paper"></i><h4>No campaigns yet</h4><p>Create your first email campaign.</p><a asp-action="Create" class="btn btn-green">New campaign</a></div>}
+  else
+  {
+    <div class="table-wrap"><table><thead><tr><th>Campaign</th><th>Audience</th><th>Status</th><th class="text-right">Recipients</th><th>Sent</th></tr></thead><tbody>
+    @foreach (var c in Model.Items)
+    {
+      <tr class="row-link" data-href="@Url.Action("Details", new { id = c.Id })"><td><div class="cell-name"><div><strong>@c.Name</strong><span>@c.Subject</span></div></div></td>
+        <td class="text-muted">@c.Target.Label()</td>
+        <td><span class="badge @(c.Status == CampaignStatus.Sent ? "badge-green" : c.Status == CampaignStatus.Sending ? "badge-amber" : "badge-gray")">@c.Status.Label()</span></td>
+        <td class="text-right mono">@c.RecipientCount</td><td class="text-muted">@(c.SentUtc.HasValue ? UiHelpers.RelativeUtc(c.SentUtc.Value) : "—")</td></tr>
+    }
+    </tbody></table></div>
+    <partial name="_Pager" model="(Model.Page, Model.TotalPages, Model.TotalCount, Model.PageSize)" />
+  }
+</div>

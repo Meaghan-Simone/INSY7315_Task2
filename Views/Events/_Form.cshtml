@@ -1,0 +1,15 @@
+@model EventInput
+<partial name="_ValidationSummary" />
+<div class="form-section"><h4>Event details</h4><p class="hint">What is happening, when and where?</p>
+  <div class="field"><label asp-for="Name">Event name *</label><input asp-for="Name" type="text" maxlength="200"><span asp-validation-for="Name" class="field-error"></span></div>
+  <div class="field-row">
+    <div class="field"><label asp-for="Type">Type</label><div class="select-wrap"><select asp-for="Type">@foreach (var t in EventService.Types){<option selected="@(Model.Type == t)">@t</option>}</select></div></div>
+    <div class="field"><label asp-for="Year">Year</label><input asp-for="Year" type="number" min="2000" max="2100"><span asp-validation-for="Year" class="field-error"></span></div>
+  </div>
+  <div class="field-row">
+    <div class="field"><label asp-for="StartDate">Start date *</label><input asp-for="StartDate" type="date"><span asp-validation-for="StartDate" class="field-error"></span></div>
+    <div class="field"><label asp-for="EndDate">End date</label><input asp-for="EndDate" type="date"><span asp-validation-for="EndDate" class="field-error"></span></div>
+  </div>
+  <div class="field"><label asp-for="Location">Location</label><input asp-for="Location" type="text" maxlength="250"></div>
+  <div class="field"><label asp-for="Description">Description</label><textarea asp-for="Description" maxlength="4000"></textarea></div>
+</div>

@@ -1,0 +1,8 @@
+@model LeadInput
+@{ ViewData["Title"] = "Edit lead"; ViewData["Eyebrow"] = "Leads"; ViewData["ShowSearch"] = false; int id = ViewBag.LeadId; }
+<div class="content-narrow">
+  <form asp-action="Edit" asp-route-id="@id" method="post" class="card" novalidate>
+    <partial name="_Form" model="Model" />
+    <div class="form-actions"><button type="submit" class="btn btn-green"><i class="bi bi-check2"></i> Save changes</button><a asp-action="Details" asp-route-id="@id" class="btn btn-ghost">Cancel</a></div>
+  </form>
+</div>

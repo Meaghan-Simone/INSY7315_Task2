@@ -1,0 +1,108 @@
+@{
+    var fontsHref = "https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap";
+    var iconsHref = "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css";
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    bool IsActive(string controller) => string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase);
+    var eyebrow = ViewData["Eyebrow"] as string ?? "Workspace";
+    var showSearch = ViewData["ShowSearch"] as bool? ?? true;
+    var csrf = Antiforgery.GetAndStoreTokens(Context).RequestToken;
+    var flash = TempData["flash"] as string;
+    var flashKind = TempData["flashKind"] as string ?? "success";
+}
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="csrf-token" content="@csrf" />
+<meta name="robots" content="noindex" />
+<title>@ViewData["Title"] · Uncovering Greatness CRM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="@fontsHref" rel="stylesheet">
+<link rel="stylesheet" href="@iconsHref">
+<link rel="stylesheet" href="~/css/styles.css" asp-append-version="true" />
+</head>
+<body>
+<div class="app-shell">
+  <div class="scrim"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark"><img src="~/Images/logo.png" alt="Uncovering Greatness Logo"></div>
+      <span class="brand-text"><strong>Uncovering Greatness</strong><span>CRM Platform</span></span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Workspace</div>
+      <a asp-controller="Home" asp-action="Index" class="nav-item @(IsActive("Home") ? "active" : "")"><i class="bi bi-speedometer2"></i>Dashboard</a>
+      <a asp-controller="Leads" asp-action="Pipeline" class="nav-item @(IsActive("Leads") && currentAction == "Pipeline" ? "active" : "")"><i class="bi bi-kanban"></i>Pipeline</a>
+      <a asp-controller="Leads" asp-action="Index" class="nav-item @(IsActive("Leads") && currentAction != "Pipeline" ? "active" : "")"><i class="bi bi-people"></i>Leads</a>
+      <a asp-controller="Companies" asp-action="Index" class="nav-item @(IsActive("Companies") ? "active" : "")"><i class="bi bi-building"></i>Companies</a>
+      <a asp-controller="Events" asp-action="Index" class="nav-item @(IsActive("Events") ? "active" : "")"><i class="bi bi-calendar-event"></i>Events</a>
+      @if (Me.CanWrite)
+      {
+        <a asp-controller="Tasks" asp-action="Index" class="nav-item @(IsActive("Tasks") ? "active" : "")"><i class="bi bi-check2-square"></i>Tasks</a>
+      }
+      <a asp-controller="Calendar" asp-action="Index" class="nav-item @(IsActive("Calendar") ? "active" : "")"><i class="bi bi-calendar3"></i>Calendar</a>
+      @if (Me.IsAdmin)
+      {
+        <div class="nav-label">Admin</div>
+        <a asp-controller="Campaigns" asp-action="Index" class="nav-item @(IsActive("Campaigns") ? "active" : "")"><i class="bi bi-envelope-paper"></i>Campaigns</a>
+        <a asp-controller="Integrations" asp-action="Index" class="nav-item @(IsActive("Integrations") ? "active" : "")"><i class="bi bi-plug"></i>Form integrations</a>
+        <a asp-controller="Users" asp-action="Index" class="nav-item @(IsActive("Users") && currentAction != "Audit" ? "active" : "")"><i class="bi bi-person-badge"></i>Users</a>
+        <a asp-controller="Users" asp-action="Audit" class="nav-item @(IsActive("Users") && currentAction == "Audit" ? "active" : "")"><i class="bi bi-shield-check"></i>Audit log</a>
+      }
+    </nav>
+    <div class="sidebar-foot">
+      <div class="dropdown">
+        <div class="sidebar-user" data-dropdown="userMenu" style="cursor:pointer">
+          <span class="avatar gold">@UiHelpers.Initials(Me.Name)</span>
+          <span class="meta"><strong>@Me.Name</strong><span>@Me.Role.Label()</span></span>
+          <i class="bi bi-chevron-expand"></i>
+        </div>
+        <div class="dropdown-panel user-menu" id="userMenu" style="right:auto;left:0;bottom:calc(100% + 10px);top:auto;">
+          <a class="dropdown-item" asp-controller="Account" asp-action="Profile"><i class="bi bi-person"></i> My profile</a>
+          <a class="dropdown-item" asp-controller="Account" asp-action="ChangePassword"><i class="bi bi-key"></i> Change password</a>
+          <form asp-controller="Account" asp-action="Logout" method="post" class="inline-form">
+            <button type="submit" class="dropdown-item link-btn" data-keep><i class="bi bi-box-arrow-right"></i> Sign out</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="menu-toggle" aria-label="Toggle navigation"><i class="bi bi-list"></i></button>
+      <div class="crumb">
+        <span class="eyebrow">@eyebrow</span>
+        <h1>@ViewData["Title"]</h1>
+      </div>
+      @if (showSearch)
+      {
+        <form class="topbar-search" asp-controller="Home" asp-action="Search" method="get" role="search">
+          <i class="bi bi-search"></i>
+          <input type="text" name="q" maxlength="100" placeholder="Search leads, companies, events…" aria-label="Search" />
+        </form>
+      }
+      <div class="topbar-actions">
+        @await Component.InvokeAsync("NotificationBell")
+        <div class="topbar-divider"></div>
+      </div>
+    </header>
+
+    <main class="content">
+      @if (!string.IsNullOrEmpty(flash))
+      {
+        <div class="flash @flashKind" role="status"><i class="bi @(flashKind == "success" ? "bi-check-circle" : "bi-exclamation-circle")"></i> @flash</div>
+      }
+      @RenderBody()
+    </main>
+  </div>
+</div>
+
+<script src="~/js/app.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

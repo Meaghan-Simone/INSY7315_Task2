@@ -1,0 +1,48 @@
+@{
+    var fontsHref = "https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap";
+    var iconsHref = "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>@ViewData["Title"] &middot; Uncovering Greatness CRM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="@fontsHref" rel="stylesheet">
+<link rel="stylesheet" href="@iconsHref">
+<link rel="stylesheet" href="~/css/styles.css" asp-append-version="true" />
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-visual">
+    <div style="display:flex;align-items:center;gap:10px;position:relative;z-index:1">
+      <span class="brand-mark login-logo"><img src="~/Images/logo.png" alt="Uncovering Greatness Logo" /></span>
+      <span class="brand-text"><strong style="color:#fff">Uncovering Greatness</strong><span>CRM Platform</span></span>
+    </div>
+    <div class="auth-quote">
+      "Supercharge Your Business Growth
+      <span>Track the climb from first contact to closed won — across every event, every company, every conversation.</span>
+    </div>
+    <svg class="peaks" viewBox="0 0 600 220" width="100%" height="220" preserveAspectRatio="none">
+      <polygon points="0,220 0,150 90,60 160,130 230,40 320,140 400,80 470,150 560,90 600,140 600,220" fill="rgba(198,150,47,0.16)"/>
+      <polygon points="0,220 0,190 120,110 210,170 300,90 380,175 470,120 560,180 600,150 600,220" fill="rgba(255,255,255,0.06)"/>
+    </svg>
+  </div>
+  <div class="auth-form-side">
+    <div class="auth-box">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:28px">
+        <span class="brand-mark login-logo"><img src="~/Images/logo.png" alt="Uncovering Greatness Logo" /></span>
+        <span class="brand-text"><strong>Uncovering Greatness</strong><span>CRM Platform</span></span>
+      </div>
+      @{ var flash = TempData["flash"] as string; }
+      @if (!string.IsNullOrEmpty(flash)) {<div class="flash @(TempData["flashKind"] ?? "success")"><i class="bi bi-check-circle"></i> @flash</div>}
+      @RenderBody()
+    </div>
+  </div>
+</div>
+<script src="~/js/app.js" asp-append-version="true"></script>
+</body>
+</html>

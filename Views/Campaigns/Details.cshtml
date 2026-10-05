@@ -1,0 +1,45 @@
+@model CampaignDetail
+@{ ViewData["Title"] = Model.Name; ViewData["Eyebrow"] = "Campaign"; bool simulated = ViewBag.Simulated; }
+<div class="page-head">
+  <div><h2>@Model.Name</h2><p><span class="badge @(Model.Status == CampaignStatus.Sent ? "badge-green" : Model.Status == CampaignStatus.Sending ? "badge-amber" : "badge-gray")">@Model.Status.Label()</span> &nbsp;Created by @Model.CreatedByName · @UiHelpers.RelativeUtc(Model.CreatedUtc)</p></div>
+  <div class="page-actions">
+    <form asp-action="Duplicate" asp-route-id="@Model.Id" method="post" class="inline-form"><button class="btn btn-outline" type="submit"><i class="bi bi-copy"></i> Duplicate</button></form>
+    @if (Model.Status == CampaignStatus.Draft)
+    {
+      <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline"><i class="bi bi-pencil"></i> Edit</a>
+      <form asp-action="Send" asp-route-id="@Model.Id" method="post" class="inline-form" data-confirm="Send this campaign to @Model.AudienceSize recipient@(Model.AudienceSize == 1 ? "" : "s") now?"><button class="btn btn-green" type="submit"><i class="bi bi-send"></i> Send now</button></form>
+    }
+    @if (Model.Status != CampaignStatus.Sending)
+    {
+      <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="inline-form" data-confirm="Delete this campaign?"><button class="btn btn-danger-outline" type="submit"><i class="bi bi-trash"></i></button></form>
+    }
+  </div>
+</div>
+@if (simulated){<div class="flash info"><i class="bi bi-info-circle"></i> No SMTP server is configured, so emails are logged instead of delivered. Set the <code>Email</code> section in appsettings to send for real.</div>}
+@if (Model.Status != CampaignStatus.Draft)
+{
+  <div class="grid grid-4" style="margin-bottom:20px">
+    <div class="card kpi"><span class="kpi-label">Recipients</span><div class="kpi-value">@Model.RecipientCount</div></div>
+    <div class="card kpi"><span class="kpi-label">Delivered</span><div class="kpi-value">@Model.DeliveredCount</div></div>
+    <div class="card kpi"><span class="kpi-label">Opened</span><div class="kpi-value">@Model.OpenedCount</div><div class="kpi-trend">@Model.OpenRate% <span>open rate</span></div></div>
+    <div class="card kpi"><span class="kpi-label">Failed</span><div class="kpi-value" style="color:@(Model.FailedCount > 0 ? "var(--red-600)" : "inherit")">@Model.FailedCount</div></div>
+  </div>
+}
+@if (Model.Failures.Count > 0)
+{
+  <div class="card" style="margin-bottom:20px"><div class="card-head"><div><h3>Delivery problems</h3><p>Why these emails could not be sent (first @Model.Failures.Count shown)</p></div></div>
+    <div class="card-pad">
+      @foreach (var f in Model.Failures)
+      {
+        <div style="padding:8px 0;border-bottom:1px solid var(--border,#eee)"><strong>@f.Email</strong><div class="text-muted" style="font-size:12.5px;word-break:break-word">@(f.Error ?? "No detail recorded")</div></div>
+      }
+    </div></div>
+}
+<div class="grid grid-12">
+  <div class="card span-8"><div class="card-head"><div><h3>@Model.Subject</h3><p>Preview — {{FirstName}}, {{FullName}} and {{Company}} are personalised per recipient</p></div></div><div class="card-pad"><div class="email-preview">@Model.Body</div></div></div>
+  <div class="card span-4"><div class="card-head"><h3>Audience</h3></div><div class="card-pad"><dl class="kv" style="grid-template-columns:90px 1fr">
+    <dt>Target</dt><dd>@Model.Target.Label()@(Model.Target == CampaignTarget.Year ? $" ({Model.TargetYear})" : "")@(Model.Target == CampaignTarget.Event ? $" — {Model.TargetEventName}" : "")</dd>
+    <dt>@(Model.Status == CampaignStatus.Draft ? "Reachable" : "Sent to")</dt><dd>@Model.AudienceSize lead@(Model.AudienceSize == 1 ? "" : "s")</dd>
+    <dt>Sent</dt><dd>@(Model.SentUtc.HasValue ? UiHelpers.RelativeUtc(Model.SentUtc.Value) : "Not sent")</dd></dl>
+    <p class="field-help" style="margin-top:14px">Leads who unsubscribed are always excluded.</p></div></div>
+</div>

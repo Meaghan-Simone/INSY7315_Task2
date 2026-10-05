@@ -1,0 +1,30 @@
+@model List<FormConnectionListItem>
+@{ ViewData["Title"] = "Form integrations"; ViewData["Eyebrow"] = "Admin"; }
+<div class="page-head">
+  <div><h2>Form integrations</h2><p>Link a Tally or Google Form and every submission becomes a lead automatically, assigned to your team.</p></div>
+  <div class="page-actions"><a asp-action="Create" class="btn btn-green"><i class="bi bi-plus-lg"></i> Connect a form</a></div>
+</div>
+@if (Model.Count == 0)
+{
+  <div class="card"><div class="empty-state"><i class="bi bi-plug"></i><h4>No forms connected yet</h4>
+    <p>Connect a form to get a private webhook URL. Paste it into Tally (Integrations → Webhooks) or use the Google Forms script we generate for you.</p>
+    <a asp-action="Create" class="btn btn-green">Connect a form</a></div></div>
+}
+else
+{
+  <div class="card"><div class="table-wrap"><table>
+    <thead><tr><th>Connection</th><th>Provider</th><th>Status</th><th class="text-right">Received</th><th class="text-right">Leads created</th><th class="text-right">Duplicates</th><th class="text-right">Rejected</th><th>Last submission</th></tr></thead>
+    <tbody>
+    @foreach (var c in Model)
+    {
+      <tr class="row-link" data-href="@Url.Action("Details", new { id = c.Id })">
+        <td><div class="cell-name"><div><strong>@c.Name</strong><span>@(c.EventName ?? "No event linked")</span></div></div></td>
+        <td class="text-muted">@(c.Provider == FormProvider.GoogleForms ? "Google Forms" : c.Provider.Label())</td>
+        <td>@if (c.IsActive){<span class="badge badge-green">Active</span>}else{<span class="badge badge-gray">Paused</span>}</td>
+        <td class="text-right mono">@c.TotalReceived</td><td class="text-right mono">@c.TotalCreated</td><td class="text-right mono">@c.TotalDuplicate</td>
+        <td class="text-right mono" style="@(c.TotalFailed > 0 ? "color:var(--red-600)" : "")">@c.TotalFailed</td>
+        <td class="text-muted">@(c.LastReceivedUtc.HasValue ? UiHelpers.RelativeUtc(c.LastReceivedUtc.Value) : "Never")</td>
+      </tr>
+    }
+    </tbody></table></div></div>
+}

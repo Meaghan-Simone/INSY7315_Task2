@@ -1,0 +1,37 @@
+@model CalendarInput
+@{
+    var users = (List<UserOption>)ViewBag.Users; var leads = (List<Option>)ViewBag.Leads;
+    var companies = (List<Option>)ViewBag.Companies; var events = (List<Option>)ViewBag.Events;
+}
+<partial name="_ValidationSummary" />
+<div class="form-section"><h4>Event</h4><p class="hint">What is happening and when?</p>
+  <div class="field"><label asp-for="Title">Title *</label><input asp-for="Title" type="text" maxlength="200"><span asp-validation-for="Title" class="field-error"></span></div>
+  <div class="field-row">
+    <div class="field"><label asp-for="Date">Date *</label><input asp-for="Date" type="date"><span asp-validation-for="Date" class="field-error"></span></div>
+    <div class="field"><label asp-for="Time">Time *</label><input asp-for="Time" type="time"><span asp-validation-for="Time" class="field-error"></span></div>
+  </div>
+  <div class="field"><label asp-for="Type">Type</label><div class="select-wrap"><select asp-for="Type">@foreach (var t in Enum.GetValues<CalendarItemType>().Where(t => t != CalendarItemType.FollowUp)){<option value="@t" selected="@(Model.Type == t)">@t.Label()</option>}</select></div></div>
+  <div class="field"><label asp-for="Notes">Notes</label><textarea asp-for="Notes" maxlength="2000"></textarea></div>
+  <div class="field-row">
+    <div class="field"><label for="LinkedType">Link to record</label><div class="select-wrap"><select id="LinkedType" name="LinkedType"><option value="">— None —</option><option value="Lead" selected="@(Model.LinkedType == "Lead")">Lead</option><option value="Company" selected="@(Model.LinkedType == "Company")">Company</option><option value="Event" selected="@(Model.LinkedType == "Event")">Event</option></select></div></div>
+    <div class="field">
+      <label>Record</label>
+      <div data-linked-for="Lead" class="is-hidden select-wrap"><select name="LinkedId"><option value="">Choose a lead…</option>@foreach (var l in leads){<option value="@l.Id" selected="@(Model.LinkedType == "Lead" && Model.LinkedId == l.Id)">@l.Name</option>}</select></div>
+      <div data-linked-for="Company" class="is-hidden select-wrap"><select name="LinkedId"><option value="">Choose a company…</option>@foreach (var c in companies){<option value="@c.Id" selected="@(Model.LinkedType == "Company" && Model.LinkedId == c.Id)">@c.Name</option>}</select></div>
+      <div data-linked-for="Event" class="is-hidden select-wrap"><select name="LinkedId"><option value="">Choose an event…</option>@foreach (var e in events){<option value="@e.Id" selected="@(Model.LinkedType == "Event" && Model.LinkedId == e.Id)">@e.Name</option>}</select></div>
+      <span asp-validation-for="LinkedId" class="field-error"></span>
+    </div>
+  </div>
+</div>
+<div class="form-section"><h4>Who can see this?</h4><p class="hint">Private events are only visible to you.</p>
+  <label class="visibility-option"><input type="radio" name="Visibility" value="Private" @(Model.Visibility == CalendarVisibility.Private ? "checked" : "")><span class="vo-icon" style="background:var(--paper);color:var(--text-600)"><i class="bi bi-lock"></i></span><span class="vo-text"><strong>Private</strong><span>Only you</span></span></label>
+  <label class="visibility-option"><input type="radio" name="Visibility" value="Shared" @(Model.Visibility == CalendarVisibility.Shared ? "checked" : "")><span class="vo-icon" style="background:var(--blue-100);color:var(--blue-600)"><i class="bi bi-people"></i></span><span class="vo-text"><strong>Share with specific people</strong><span>They will see it on their calendar and get a notification</span></span></label>
+  <div class="share-list" id="shareWithList">
+    @foreach (var u in users){<label class="user-check-item"><input type="checkbox" name="SharedWith" value="@u.Id" @(Model.SharedWith.Contains(u.Id) ? "checked" : "")><span>@u.FullName</span></label>}
+    <span asp-validation-for="SharedWith" class="field-error"></span>
+  </div>
+  @if (Me.IsAdmin)
+  {
+    <label class="visibility-option"><input type="radio" name="Visibility" value="Team" @(Model.Visibility == CalendarVisibility.Team ? "checked" : "")><span class="vo-icon" style="background:var(--gold-100);color:var(--gold-700)"><i class="bi bi-building"></i></span><span class="vo-text"><strong>Whole team</strong><span>Visible to everyone (company events)</span></span></label>
+  }
+</div>

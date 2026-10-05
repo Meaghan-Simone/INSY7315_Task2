@@ -1,0 +1,2 @@
+@{ ViewData["Title"] = "Not found"; Layout = User.Identity?.IsAuthenticated == true ? "_Layout" : "_AuthLayout"; }
+<div class="card"><div class="empty-state"><i class="bi bi-compass"></i><h4>We couldn't find that page</h4><p>It may have been moved or deleted, or you may not have access to it.</p><a href="/" class="btn btn-green">Back to dashboard</a></div></div>

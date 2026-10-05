@@ -1,0 +1,28 @@
+@model CampaignInput
+@{
+    int? id = ViewBag.CampaignId; bool editing = id.HasValue;
+    ViewData["Title"] = editing ? "Edit campaign" : "New campaign"; ViewData["Eyebrow"] = "Campaigns"; ViewData["ShowSearch"] = false;
+    var events = (List<Option>)ViewBag.Events; var years = (List<int>)ViewBag.Years; bool simulated = ViewBag.Simulated;
+}
+<div class="content-narrow">
+  @if (simulated){<div class="flash info"><i class="bi bi-info-circle"></i> No SMTP server is configured: sending will be simulated (emails are logged, not delivered).</div>}
+  <form asp-action="@(editing ? "Edit" : "Create")" asp-route-id="@id" method="post" class="card" novalidate>
+    <partial name="_ValidationSummary" />
+    <div class="form-section"><h4>Message</h4><p class="hint">Use {{FirstName}}, {{FullName}} and {{Company}} to personalise.</p>
+      <div class="field"><label asp-for="Name">Campaign name *</label><input asp-for="Name" type="text" maxlength="200"></div>
+      <div class="field"><label asp-for="Subject">Subject line *</label><input asp-for="Subject" type="text" maxlength="300"></div>
+      <div class="field"><label asp-for="Body">Email body *</label><textarea asp-for="Body" style="min-height:220px" maxlength="20000"></textarea><p class="field-help">Plain text. An unsubscribe link is added automatically.</p></div>
+    </div>
+    <div class="form-section"><h4>Audience</h4><p class="hint">Who should receive this?</p>
+      <div class="field"><label asp-for="Target">Send to</label><div class="select-wrap"><select asp-for="Target"><option value="All" selected="@(Model.Target == CampaignTarget.All)">All reachable leads</option><option value="Year" selected="@(Model.Target == CampaignTarget.Year)">Leads registered in a year</option><option value="Event" selected="@(Model.Target == CampaignTarget.Event)">Leads from an event</option></select></div></div>
+      <div class="field is-hidden" data-target-for="Year"><label asp-for="TargetYear">Registration year</label><div class="select-wrap"><select asp-for="TargetYear"><option value="">Choose year…</option>@foreach (var y in years.Union(new[] { DateTime.Today.Year }).OrderByDescending(x => x)){<option value="@y" selected="@(Model.TargetYear == y)">@y</option>}</select></div></div>
+      <div class="field is-hidden" data-target-for="Event"><label asp-for="TargetEventId">Event</label><div class="select-wrap"><select asp-for="TargetEventId"><option value="">Choose event…</option>@foreach (var e in events){<option value="@e.Id" selected="@(Model.TargetEventId == e.Id)">@e.Name</option>}</select></div></div>
+      <p class="field-help"><strong id="audienceCount">…</strong> reachable lead(s) match this audience right now.</p>
+    </div>
+    <div class="form-actions">
+      <button type="submit" name="submit" value="draft" class="btn btn-outline"><i class="bi bi-save"></i> Save draft</button>
+      <button type="submit" name="submit" value="send" class="btn btn-green" data-keep><i class="bi bi-send"></i> Save &amp; send</button>
+      <a asp-action="Index" class="btn btn-ghost">Cancel</a>
+    </div>
+  </form>
+</div>

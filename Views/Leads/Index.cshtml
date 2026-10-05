@@ -1,0 +1,87 @@
+@model object
+@{
+    ViewData["Title"] = "Leads"; ViewData["Eyebrow"] = "Manage";
+    var result = (PagedResult<LeadListItem>)ViewBag.Result;
+    var q = (LeadQuery)ViewBag.Query;
+    var tabs = ((int All, int Mine, int FollowUp, int Starred))ViewBag.Tabs;
+    var events = (List<Option>)ViewBag.Events;
+    var users = (List<UserOption>)ViewBag.Users;
+    var view = q.View ?? "all";
+    string Tab(string v) => Url.Action("Index", new { q = q.Q, stage = q.Stage, eventId = q.EventId, assignedToId = q.AssignedToId, sort = q.Sort, view = v })!;
+    var importErrors = TempData["importErrors"] as string;
+}
+<div class="page-head">
+  <div><h2>Leads</h2><p>Every person registered through your events, campaigns and referrals.</p></div>
+  <div class="page-actions">
+    <a class="btn btn-outline" href="@Url.Action("Export", new { q = q.Q, stage = q.Stage, eventId = q.EventId, assignedToId = q.AssignedToId, view = q.View, sort = q.Sort })"><i class="bi bi-download"></i> Export CSV</a>
+    @if (Me.CanWrite)
+    {
+      <a class="btn btn-outline" data-dropdown="importPanel"><i class="bi bi-upload"></i> Import CSV</a>
+      <a asp-action="Create" class="btn btn-green"><i class="bi bi-plus-lg"></i> New lead</a>
+    }
+  </div>
+</div>
+@if (!Me.CanWrite){<div class="readonly-banner"><i class="bi bi-eye"></i> You have read-only access. Ask an admin if you need to create or edit leads.</div>}
+@if (!string.IsNullOrEmpty(importErrors))
+{
+  <div class="validation-summary"><strong>Some rows were skipped:</strong><ul>@foreach (var line in importErrors.Split('\n', StringSplitOptions.RemoveEmptyEntries)){<li>@line</li>}</ul></div>
+}
+@if (Me.CanWrite)
+{
+  <div class="dropdown"><div class="dropdown-panel" id="importPanel" style="width:340px;right:auto;left:0;top:0">
+    <form asp-action="Import" method="post" enctype="multipart/form-data" style="padding:16px">
+      <label>Choose a .csv file (max 5 MB)</label>
+      <input type="file" name="file" accept=".csv,text/csv" required style="margin-bottom:10px">
+      <p class="field-help" style="margin-bottom:12px">Required columns: FirstName, Surname, Email. Optional: Phone, JobTitle, Company, Event, Source, Stage, DealValue, City, Province, Tags.</p>
+      <button type="submit" class="btn btn-green btn-sm">Import leads</button>
+    </form>
+  </div></div>
+}
+
+<div class="card">
+  <div class="tabs">
+    <a class="tab @(view == "all" ? "active" : "")" href="@Tab("all")">All leads <span class="chip">@tabs.All</span></a>
+    <a class="tab @(view == "mine" ? "active" : "")" href="@Tab("mine")">My leads <span class="chip">@tabs.Mine</span></a>
+    <a class="tab @(view == "followup" ? "active" : "")" href="@Tab("followup")">Follow-up due <span class="chip">@tabs.FollowUp</span></a>
+    <a class="tab @(view == "starred" ? "active" : "")" href="@Tab("starred")">Starred <span class="chip">@tabs.Starred</span></a>
+  </div>
+  <form method="get" class="toolbar" style="padding:16px 22px 0">
+    <input type="hidden" name="view" value="@q.View" />
+    <div class="search"><i class="bi bi-search"></i><input type="text" name="q" value="@q.Q" placeholder="Search name, email or company" maxlength="100"></div>
+    <div class="select-wrap"><select name="stage" data-autosubmit><option value="">All stages</option>@foreach (var s in Enum.GetValues<LeadStage>()){<option value="@((int)s)" selected="@(q.Stage == s)">@s.Label()</option>}</select></div>
+    <div class="select-wrap"><select name="eventId" data-autosubmit><option value="">All events</option>@foreach (var e in events){<option value="@e.Id" selected="@(q.EventId == e.Id)">@e.Name</option>}</select></div>
+    <div class="select-wrap"><select name="assignedToId" data-autosubmit><option value="">Any owner</option>@foreach (var u in users){<option value="@u.Id" selected="@(q.AssignedToId == u.Id)">@u.FullName</option>}</select></div>
+    <div class="select-wrap"><select name="sort" data-autosubmit>
+      <option value="" selected="@(string.IsNullOrEmpty(q.Sort))">Newest first</option>
+      <option value="name" selected="@(q.Sort == "name")">Name A–Z</option>
+      <option value="value" selected="@(q.Sort == "value")">Deal value</option>
+      <option value="followup" selected="@(q.Sort == "followup")">Next follow-up</option>
+      <option value="stage" selected="@(q.Sort == "stage")">Stage</option></select></div>
+    <button class="btn btn-outline btn-sm" type="submit">Search</button>
+    @if (!string.IsNullOrEmpty(q.Q) || q.Stage != null || q.EventId != null || q.AssignedToId != null){<a asp-action="Index" class="btn btn-ghost btn-sm">Clear</a>}
+  </form>
+  @if (result.Items.Count == 0)
+  {
+    <div class="empty-state"><i class="bi bi-people"></i><h4>No leads found</h4><p>Try adjusting your filters@(Me.CanWrite ? ", or add your first lead" : "").</p>@if (Me.CanWrite){<a asp-action="Create" class="btn btn-green">New lead</a>}</div>
+  }
+  else
+  {
+    <div class="table-wrap"><table>
+      <thead><tr><th style="width:36px"></th><th>Lead</th><th>Company</th><th>Stage</th><th class="text-right">Value</th><th>Owner</th><th>Next follow-up</th></tr></thead>
+      <tbody>
+      @foreach (var l in result.Items)
+      {
+        <tr class="row-link" data-href="@Url.Action("Details", new { id = l.Id })">
+          <td><button type="button" class="star-btn @(l.Starred ? "is-on" : "")" data-star="@l.Id" aria-label="Star"><i class="bi bi-star"></i></button></td>
+          <td><div class="cell-name"><span class="avatar">@UiHelpers.Initials(l.FullName)</span><div><strong>@l.FullName</strong><span>@l.JobTitle</span></div></div></td>
+          <td class="text-muted">@(l.CompanyName ?? "—")</td>
+          <td><span class="badge @UiHelpers.StageBadge(l.Stage)">@l.Stage.Label()</span></td>
+          <td class="text-right mono">@UiHelpers.Money(l.DealValue)</td>
+          <td class="text-muted">@(l.AssignedToName ?? "Unassigned")</td>
+          <td class="@(l.NextFollowUp.HasValue && l.NextFollowUp.Value.Date < Clock.LocalToday && l.Stage < LeadStage.ClosedWon ? "" : "text-muted")" @(l.NextFollowUp.HasValue && l.NextFollowUp.Value.Date < Clock.LocalToday && l.Stage < LeadStage.ClosedWon ? "style=color:var(--red-600);font-weight:600" : "")>@UiHelpers.RelativeDate(l.NextFollowUp, false)</td>
+        </tr>
+      }
+      </tbody></table></div>
+    <partial name="_Pager" model="(result.Page, result.TotalPages, result.TotalCount, result.PageSize)" />
+  }
+</div>

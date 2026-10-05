@@ -1,0 +1,15 @@
+@model TaskInput
+@{ var users = (List<UserOption>)ViewBag.Users; var leads = (List<Option>)ViewBag.Leads; }
+<partial name="_ValidationSummary" />
+<div class="form-section">
+  <div class="field"><label asp-for="Title">Title *</label><input asp-for="Title" type="text" maxlength="200"><span asp-validation-for="Title" class="field-error"></span></div>
+  <div class="field"><label asp-for="Description">Details</label><textarea asp-for="Description" maxlength="2000"></textarea></div>
+  <div class="field-row">
+    <div class="field"><label asp-for="DueAt">Due</label><input asp-for="DueAt" type="datetime-local"></div>
+    <div class="field"><label asp-for="Priority">Priority</label><div class="select-wrap"><select asp-for="Priority">@foreach (var p in Enum.GetValues<TaskPriority>()){<option value="@p" selected="@(Model.Priority == p)">@p.Label()</option>}</select></div></div>
+  </div>
+  <div class="field-row">
+    <div class="field"><label asp-for="AssignedToId">Assign to</label><div class="select-wrap"><select asp-for="AssignedToId"><option value="">Me</option>@foreach (var u in users){<option value="@u.Id" selected="@(Model.AssignedToId == u.Id)">@u.FullName</option>}</select></div></div>
+    <div class="field"><label asp-for="LeadId">Related lead</label><div class="select-wrap"><select asp-for="LeadId"><option value="">— None —</option>@foreach (var l in leads){<option value="@l.Id" selected="@(Model.LeadId == l.Id)">@l.Name</option>}</select></div></div>
+  </div>
+</div>

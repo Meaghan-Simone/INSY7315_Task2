@@ -1,0 +1,9 @@
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="validation-summary" role="alert">
+      <ul>
+        @foreach (var e in ViewData.ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).Where(m => !string.IsNullOrWhiteSpace(m)).Distinct())
+        {<li>@e</li>}
+      </ul>
+    </div>
+}

@@ -1,0 +1,6 @@
+@model TaskInput
+@{ ViewData["Title"] = "Edit task"; ViewData["Eyebrow"] = "Tasks"; ViewData["ShowSearch"] = false; int id = ViewBag.TaskId; }
+<div class="content-narrow"><form asp-action="Edit" asp-route-id="@id" method="post" class="card" novalidate>
+  <partial name="_Form" model="Model" />
+  <div class="form-actions"><button type="submit" class="btn btn-green"><i class="bi bi-check2"></i> Save changes</button><a asp-action="Index" class="btn btn-ghost">Cancel</a></div>
+</form></div>

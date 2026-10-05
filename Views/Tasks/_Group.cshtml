@@ -1,0 +1,25 @@
+@model (string Title, List<TaskItem> Items, string Empty)
+<div class="card" style="margin-bottom:20px">
+          <div class="card-head"><h3>@Model.Title <span class="chip" style="margin-left:6px">@Model.Items.Count</span></h3></div>
+          @if (Model.Items.Count == 0){<p class="text-muted" style="padding:18px 22px;font-size:13px">@Model.Empty</p>}
+          @foreach (var t in Model.Items)
+          {
+            <div class="notif-row" data-task-row style="align-items:center">
+              <input type="checkbox" data-task="@t.Id" @(t.IsCompleted ? "checked" : "") @(t.CanEdit ? "" : "disabled") style="width:18px;height:18px" aria-label="Complete task" />
+              <div style="flex:1;@(t.IsCompleted ? "opacity:.6" : "")">
+                <strong style="@(t.IsCompleted ? "text-decoration:line-through" : "")"><span class="priority-dot @UiHelpers.PriorityClass(t.Priority)"></span>@t.Title</strong>
+                <div class="text-muted" style="font-size:12.5px;margin-top:2px">
+                  @(t.DueAt.HasValue ? UiHelpers.RelativeDate(t.DueAt) : "No due date") · @t.AssignedToName
+                  @if (!string.IsNullOrWhiteSpace(t.LeadName)){<text> · </text><a asp-controller="Leads" asp-action="Details" asp-route-id="@t.LeadId" style="text-decoration:underline">@t.LeadName</a>}
+                </div>
+                @if (!string.IsNullOrEmpty(t.Description)){<div class="text-muted" style="font-size:12.5px;margin-top:2px">@t.Description</div>}
+              </div>
+              @if (t.IsOverdue){<span class="badge badge-red">Overdue</span>}
+              @if (t.CanEdit && !t.IsCompleted){<a asp-action="Edit" asp-route-id="@t.Id" class="btn btn-ghost btn-sm" aria-label="Edit"><i class="bi bi-pencil"></i></a>}
+              @if (t.CanEdit)
+              {
+                <form asp-action="Delete" asp-route-id="@t.Id" method="post" class="inline-form" data-confirm="Delete this task?"><button type="submit" class="btn btn-ghost btn-sm" aria-label="Delete"><i class="bi bi-trash"></i></button></form>
+              }
+            </div>
+          }
+        </div>

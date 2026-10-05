@@ -1,0 +1,2 @@
+@{ ViewData["Title"] = "Something went wrong"; Layout = User.Identity?.IsAuthenticated == true ? "_Layout" : "_AuthLayout"; }
+<div class="card"><div class="empty-state"><i class="bi bi-exclamation-triangle"></i><h4>Something went wrong</h4><p>The request could not be completed. Please try again — if the problem continues, contact your administrator.</p><a href="/" class="btn btn-green">Back to dashboard</a></div></div>

@@ -1,0 +1,24 @@
+@model (int Page, int TotalPages, int Total, int PageSize)
+@{
+    string Link(int p)
+    {
+        var qs = Context.Request.Query.Where(kv => !string.Equals(kv.Key, "page", StringComparison.OrdinalIgnoreCase))
+            .SelectMany(kv => kv.Value.Select(v => Uri.EscapeDataString(kv.Key) + "=" + Uri.EscapeDataString(v ?? "")))
+            .Append("page=" + p);
+        return Context.Request.Path + "?" + string.Join("&", qs);
+    }
+    var from = Model.Total == 0 ? 0 : (Model.Page - 1) * Model.PageSize + 1;
+    var to = Math.Min(Model.Total, Model.Page * Model.PageSize);
+    var start = Math.Max(1, Model.Page - 2); var end = Math.Min(Model.TotalPages, start + 4); start = Math.Max(1, end - 4);
+}
+<div class="pagination">
+  <span class="text-muted" style="font-size:12.5px">Showing @from–@to of @Model.Total</span>
+  @if (Model.TotalPages > 1)
+  {
+    <div class="steps">
+      <a href="@Link(Model.Page - 1)" class="@(Model.Page <= 1 ? "disabled" : "")" aria-label="Previous"><i class="bi bi-chevron-left"></i></a>
+      @for (var p = start; p <= end; p++){<a href="@Link(p)" class="@(p == Model.Page ? "active" : "")">@p</a>}
+      <a href="@Link(Model.Page + 1)" class="@(Model.Page >= Model.TotalPages ? "disabled" : "")" aria-label="Next"><i class="bi bi-chevron-right"></i></a>
+    </div>
+  }
+</div>

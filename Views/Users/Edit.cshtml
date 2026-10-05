@@ -1,0 +1,52 @@
+@model UserUpdateInput
+@{
+    ViewData["Title"] = "Manage user"; ViewData["Eyebrow"] = "Users"; ViewData["ShowSearch"] = false;
+    var u = (UserSummary)ViewBag.User; var targets = (List<UserOption>)ViewBag.Targets; bool isSelf = ViewBag.IsSelf;
+}
+<div class="content-narrow">
+  <form asp-action="Edit" asp-route-id="@u.Id" method="post" class="card" novalidate autocomplete="off" style="margin-bottom:20px">
+    <partial name="_ValidationSummary" />
+    <div class="form-section"><h4>Details</h4><p class="hint">Changing the email changes the address this person signs in with@(isSelf ? "" : " and signs them out everywhere"). Changing a role or deactivating an account signs the user out everywhere immediately.</p>
+      <div class="field"><label asp-for="FullName">Full name *</label><input asp-for="FullName" type="text" maxlength="120"></div>
+      <div class="field"><label asp-for="Email">Email (sign-in name) *</label><input asp-for="Email" type="email" maxlength="200" autocomplete="off"><span asp-validation-for="Email" class="field-error"></span></div>
+      <div class="field-row">
+        <div class="field"><label asp-for="JobTitle">Job title</label><input asp-for="JobTitle" type="text" maxlength="150"></div>
+        <div class="field"><label asp-for="Phone">Phone</label><input asp-for="Phone" type="tel" maxlength="40"><span asp-validation-for="Phone" class="field-error"></span></div>
+      </div>
+      <div class="field"><label asp-for="Role">Role</label><div class="select-wrap"><select asp-for="Role">@foreach (var r in Enum.GetValues<UserRole>()){<option value="@r" selected="@(Model.Role == r)">@r.Label()</option>}</select></div>@if (isSelf){<p class="field-help">You can't change your own role or deactivate yourself.</p>}</div>
+      <label class="check-row"><input asp-for="IsActive" type="checkbox"><span style="font-size:13.5px">Account is active (can sign in)</span></label>
+    </div>
+    <div class="form-actions"><button type="submit" class="btn btn-green"><i class="bi bi-check2"></i> Save changes</button><a asp-action="Index" class="btn btn-ghost">Back</a></div>
+  </form>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="form-section"><h4>Security</h4><p class="hint">Last sign-in: @(u.LastLoginUtc.HasValue ? UiHelpers.RelativeUtc(u.LastLoginUtc.Value) : "never")</p>
+      @if (u.IsLocked)
+      {
+        <form asp-action="Unlock" asp-route-id="@u.Id" method="post" style="margin-bottom:14px"><div class="flash error" style="margin-bottom:10px"><i class="bi bi-lock"></i> This account is temporarily locked after failed sign-ins.</div><button class="btn btn-outline btn-sm" type="submit">Unlock account</button></form>
+      }
+      <form asp-action="ResetPassword" asp-route-id="@u.Id" method="post" autocomplete="off" data-confirm="Reset this user's password and sign them out everywhere?">
+        <div class="field"><label for="TemporaryPassword">Set a new temporary password</label><input id="TemporaryPassword" name="TemporaryPassword" type="text" autocomplete="off" style="font-family:'IBM Plex Mono',monospace" value="@UncoveringGreatnessCRM.Security.PasswordService.GenerateTemporary()"></div>
+        <button class="btn btn-outline btn-sm" type="submit"><i class="bi bi-key"></i> Reset password</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card" id="danger" style="border-color:var(--red-600)">
+    <div class="form-section"><h4 style="color:var(--red-600)">Delete user</h4>
+      @if (isSelf)
+      {
+        <p class="hint" style="margin-bottom:0">You can't delete your own account. Ask another admin to remove it.</p>
+      }
+      else
+      {
+        <p class="hint">Permanently removes this account. Their <strong>@u.AssignedLeads lead@(u.AssignedLeads == 1 ? "" : "s")</strong> and any tasks assigned to them move to the person you choose. Notes, campaigns and activity they wrote are kept and shown as written by a deleted user; their personal calendar events, notifications and stars are deleted. This cannot be undone. If you just want to stop someone signing in, untick “Account is active” above instead.</p>
+        <form asp-action="Delete" asp-route-id="@u.Id" method="post" data-confirm="Permanently delete @u.FullName? This cannot be undone.">
+          <div class="field"><label for="transferToId">Transfer leads &amp; tasks to *</label>
+            <div class="select-wrap"><select id="transferToId" name="transferToId" required><option value="">Choose a person…</option>@foreach (var t in targets){<option value="@t.Id">@t.FullName (@t.Role.Label())</option>}</select></div></div>
+          <button type="submit" class="btn btn-danger-outline"><i class="bi bi-trash"></i> Delete user</button>
+        </form>
+      }
+    </div>
+  </div>
+</div>

@@ -1,0 +1,34 @@
+@model FormConnectionInput
+@{
+    var events = (List<Option>)ViewBag.Events; var users = (List<UserOption>)ViewBag.Users;
+    bool hasSecret = ViewBag.HasSecret as bool? ?? false;
+}
+<partial name="_ValidationSummary" />
+<div class="form-section"><h4>Connection</h4><p class="hint">Which form is this, and where does it come from?</p>
+  <div class="field"><label asp-for="Name">Name *</label><input asp-for="Name" type="text" maxlength="120" placeholder="e.g. Summit Expo registration"></div>
+  <div class="field-row">
+    <div class="field"><label asp-for="Provider">Form tool</label><div class="select-wrap"><select asp-for="Provider">
+      <option value="Tally" selected="@(Model.Provider == FormProvider.Tally)">Tally</option>
+      <option value="GoogleForms" selected="@(Model.Provider == FormProvider.GoogleForms)">Google Forms</option>
+      <option value="Generic" selected="@(Model.Provider == FormProvider.Generic)">Other (Zapier, Make, custom…)</option></select></div></div>
+    <div class="field"><label asp-for="EventId">Link leads to event</label><div class="select-wrap"><select asp-for="EventId"><option value="">— None —</option>@foreach (var e in events){<option value="@e.Id" selected="@(Model.EventId == e.Id)">@e.Name</option>}</select></div></div>
+  </div>
+  <label class="check-row"><input asp-for="IsActive" type="checkbox"><span style="font-size:13.5px">Active (untick to pause: the webhook then rejects submissions)</span></label>
+</div>
+<div class="form-section"><h4>Who gets the leads?</h4><p class="hint">New leads are assigned automatically and the owner is notified.</p>
+  <div class="field-row">
+    <div class="field"><label asp-for="Assignment">Assignment</label><div class="select-wrap"><select asp-for="Assignment">
+      <option value="RoundRobin" selected="@(Model.Assignment == AssignmentMode.RoundRobin)">Take turns across the whole team</option>
+      <option value="LeastBusy" selected="@(Model.Assignment == AssignmentMode.LeastBusy)">Whoever has the fewest open leads</option>
+      <option value="SpecificUser" selected="@(Model.Assignment == AssignmentMode.SpecificUser)">One specific person</option></select></div></div>
+    <div class="field"><label asp-for="AssignToUserId">Specific person</label><div class="select-wrap"><select asp-for="AssignToUserId"><option value="">—</option>@foreach (var u in users){<option value="@u.Id" selected="@(Model.AssignToUserId == u.Id)">@u.FullName</option>}</select></div><span asp-validation-for="AssignToUserId" class="field-error"></span></div>
+  </div>
+  <div class="field"><label asp-for="DefaultTags">Tags added to every lead</label><input asp-for="DefaultTags" type="text" maxlength="300" placeholder="Expo, Website"></div>
+</div>
+<div class="form-section"><h4>Advanced</h4><p class="hint">Most forms work with no setup: questions labelled “Email”, “Name”, “Phone”, “Company”… are recognised automatically.</p>
+  <div class="field"><label asp-for="FieldMapping">Field mapping (optional)</label><textarea asp-for="FieldMapping" maxlength="2000" placeholder="Email = Work email address&#10;Company = Where do you work?"></textarea>
+    <p class="field-help">One per line: <code>LeadField = exact question label</code>. Fields: @string.Join(", ", UncoveringGreatnessCRM.Services.FormPayloadParser.FieldNames).</p><span asp-validation-for="FieldMapping" class="field-error"></span></div>
+  <div class="field"><label asp-for="SigningSecret">Signing secret (recommended for Tally)</label><input asp-for="SigningSecret" type="password" maxlength="200" autocomplete="new-password" placeholder="@(hasSecret ? "A secret is set — type to replace it" : "Same secret you enter in Tally")">
+    <p class="field-help">When set, deliveries without a valid <code>Tally-Signature</code> header are rejected. It is stored encrypted and never shown again.</p></div>
+  @if (hasSecret){<label class="check-row"><input asp-for="ClearSigningSecret" type="checkbox"><span style="font-size:13.5px">Remove the current signing secret</span></label>}
+</div>

@@ -1,0 +1,19 @@
+@model ProfileInput
+@{ ViewData["Title"] = "My profile"; ViewData["ShowSearch"] = false; ViewData["Eyebrow"] = "Account"; }
+<div class="content-narrow">
+  <partial name="_ValidationSummary" />
+  <form asp-action="Profile" method="post" class="card" novalidate>
+    <div class="form-section">
+      <h4>Your details</h4><p class="hint">Your email and role are managed by a workspace admin.</p>
+      <div class="field"><label asp-for="FullName">Full name</label><input asp-for="FullName" type="text" maxlength="120"></div>
+      <div class="field-row">
+        <div class="field"><label>Email</label><input type="email" value="@Me.Email" disabled></div>
+        <div class="field"><label>Role</label><input type="text" value="@Me.Role.Label()" disabled></div>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-green"><i class="bi bi-check2"></i> Save changes</button>
+      <a asp-action="ChangePassword" class="btn btn-outline"><i class="bi bi-key"></i> Change password</a>
+    </div>
+  </form>
+</div>

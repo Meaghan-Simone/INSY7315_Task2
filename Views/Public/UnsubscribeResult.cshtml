@@ -1,0 +1,4 @@
+@model bool
+@{ Layout = "~/Views/Shared/_AuthLayout.cshtml"; ViewData["Title"] = "Unsubscribe"; }
+@if (Model){<h2 style="font-size:22px;margin-bottom:6px">You're unsubscribed</h2><p style="color:var(--text-500);font-size:13.5px">We won't send you any more marketing emails.</p>}
+else{<h2 style="font-size:22px;margin-bottom:6px">Link not recognised</h2><p style="color:var(--text-500);font-size:13.5px">This unsubscribe link is invalid. Please reply to any of our emails and we'll remove you manually.</p>}

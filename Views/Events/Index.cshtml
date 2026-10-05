@@ -1,0 +1,31 @@
+@model PagedResult<EventListItem>
+@{ ViewData["Title"] = "Events"; ViewData["Eyebrow"] = "Manage"; var q = (EventQuery)ViewBag.Query; var years = (List<int>)ViewBag.Years; }
+<div class="page-head">
+  <div><h2>Events</h2><p>Conferences, workshops and roadshows that generate leads.</p></div>
+  <div class="page-actions">@if (Me.IsAdmin){<a asp-action="Create" class="btn btn-green"><i class="bi bi-plus-lg"></i> New event</a>}</div>
+</div>
+<form method="get" class="toolbar">
+  <div class="search"><i class="bi bi-search"></i><input type="text" name="q" value="@q.Q" placeholder="Search events" maxlength="100"></div>
+  <div class="select-wrap"><select name="type" data-autosubmit><option value="">All types</option>@foreach (var t in EventService.Types){<option selected="@(q.Type == t)">@t</option>}</select></div>
+  <div class="select-wrap"><select name="year" data-autosubmit><option value="">All years</option>@foreach (var y in years){<option value="@y" selected="@(q.Year == y)">@y</option>}</select></div>
+  <button class="btn btn-outline btn-sm" type="submit">Search</button>
+</form>
+@if (Model.Items.Count == 0)
+{
+  <div class="card"><div class="empty-state"><i class="bi bi-calendar-event"></i><h4>No events found</h4><p>Try different filters@(Me.IsAdmin ? " or create an event" : "").</p></div></div>
+}
+else
+{
+  <div class="grid grid-3">
+    @foreach (var e in Model.Items)
+    {
+      <a asp-action="Details" asp-route-id="@e.Id" class="card card-pad" style="display:block;color:inherit">
+        <div style="display:flex;justify-content:space-between;margin-bottom:10px"><span class="badge @(e.IsUpcoming ? "badge-gold" : "badge-gray")">@e.Type</span><span class="text-muted" style="font-size:12px">@(e.IsUpcoming ? "Upcoming" : "Past")</span></div>
+        <h3 style="font-size:16px;margin-bottom:6px">@e.Name</h3>
+        <p class="text-muted" style="font-size:12.5px;margin-bottom:14px"><i class="bi bi-calendar3"></i> @UiHelpers.DateRange(e.StartDate, e.EndDate)<br /><i class="bi bi-geo-alt"></i> @(e.Location ?? "Location TBC")</p>
+        <div style="display:flex;align-items:center;justify-content:space-between"><div class="avatar-stack">@foreach (var i in e.AttendeeInitials){<span class="avatar">@i</span>}</div><span class="text-muted" style="font-size:12.5px">@e.Attendees registered</span></div>
+      </a>
+    }
+  </div>
+  <div class="card" style="margin-top:20px"><partial name="_Pager" model="(Model.Page, Model.TotalPages, Model.TotalCount, Model.PageSize)" /></div>
+}

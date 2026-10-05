@@ -1,0 +1,22 @@
+@model PagedResult<NotificationDto>
+@{ ViewData["Title"] = "Notifications"; ViewData["Eyebrow"] = "Inbox"; string? filter = ViewBag.Filter; int unread = ViewBag.Unread; }
+<div class="page-head"><div><h2>Notifications</h2><p>@(unread > 0 ? $"{unread} unread" : "You're all caught up.")</p></div>
+  <div class="page-actions">@if (unread > 0){<form asp-action="MarkAllRead" method="post" class="inline-form"><input type="hidden" name="returnTo" value="/Notifications" /><button class="btn btn-outline" type="submit"><i class="bi bi-check2-all"></i> Mark all read</button></form>}</div></div>
+<div class="card">
+  <div class="tabs">
+    <a class="tab @(string.IsNullOrEmpty(filter) ? "active" : "")" asp-action="Index">All</a>
+    <a class="tab @(filter == "unread" ? "active" : "")" asp-action="Index" asp-route-filter="unread">Unread</a>
+    <a class="tab @(filter == "followups" ? "active" : "")" asp-action="Index" asp-route-filter="followups">Follow-ups &amp; tasks</a>
+    <a class="tab @(filter == "deals" ? "active" : "")" asp-action="Index" asp-route-filter="deals">Deals &amp; leads</a>
+  </div>
+  @if (Model.Items.Count == 0){<div class="empty-state"><i class="bi bi-bell"></i><h4>Nothing here</h4><p>Follow-up reminders, task due dates and assignments will appear here.</p></div>}
+  @foreach (var n in Model.Items)
+  {
+    var (bg, fg) = UiHelpers.NotificationColors(n.Type);
+    <div class="notif-row @(n.IsRead ? "" : "unread")">
+      <span class="t-icon" style="background:@bg;color:@fg"><i class="bi @UiHelpers.NotificationIcon(n.Type)"></i></span>
+      <a class="stretch" href="@(n.LinkUrl ?? "#")" data-notif="@n.Id"><strong style="font-size:13.5px">@n.Title</strong><p class="text-muted" style="margin:2px 0 0;font-size:12.5px">@n.Body</p><div class="t-time">@UiHelpers.RelativeUtc(n.CreatedUtc)</div></a>
+    </div>
+  }
+  @if (Model.Items.Count > 0){<partial name="_Pager" model="(Model.Page, Model.TotalPages, Model.TotalCount, Model.PageSize)" />}
+</div>

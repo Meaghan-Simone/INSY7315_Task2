@@ -1,0 +1,25 @@
+@model CompanyInput
+<partial name="_ValidationSummary" />
+<div class="form-section"><h4>Company</h4><p class="hint">Basic details about the organisation.</p>
+  <div class="field"><label asp-for="Name">Company name *</label><input asp-for="Name" type="text" maxlength="200"><span asp-validation-for="Name" class="field-error"></span></div>
+  <div class="field-row">
+    <div class="field"><label asp-for="Industry">Industry</label><input asp-for="Industry" type="text" maxlength="150"></div>
+    <div class="field"><label asp-for="Size">Company size</label><div class="select-wrap"><select asp-for="Size"><option value="">—</option>@foreach (var s in CompanySizes.All){<option selected="@(Model.Size == s)">@s</option>}</select></div></div>
+  </div>
+  <div class="field"><label asp-for="Website">Website</label><input asp-for="Website" type="url" maxlength="300" placeholder="https://"><span asp-validation-for="Website" class="field-error"></span></div>
+</div>
+<div class="form-section"><h4>Location</h4><p class="hint">&nbsp;</p>
+  <div class="field"><label asp-for="AddressLine">Street address</label><input asp-for="AddressLine" type="text" maxlength="250"></div>
+  <div class="field-row">
+    <div class="field"><label asp-for="City">City</label><input asp-for="City" type="text" maxlength="100"></div>
+    <div class="field"><label asp-for="Province">Province</label><input asp-for="Province" type="text" maxlength="60"></div>
+  </div>
+</div>
+<div class="form-section"><h4>Primary contact</h4><p class="hint">Main point of contact at the company.</p>
+  <div class="field"><label asp-for="ContactPerson">Name</label><input asp-for="ContactPerson" type="text" maxlength="150"></div>
+  <div class="field-row">
+    <div class="field"><label asp-for="ContactPhone">Phone</label><input asp-for="ContactPhone" type="tel" maxlength="40"><span asp-validation-for="ContactPhone" class="field-error"></span></div>
+    <div class="field"><label asp-for="ContactEmail">Email</label><input asp-for="ContactEmail" type="email" maxlength="200"><span asp-validation-for="ContactEmail" class="field-error"></span></div>
+  </div>
+  <div class="field"><label asp-for="Notes">Notes</label><textarea asp-for="Notes" maxlength="2000"></textarea></div>
+</div>

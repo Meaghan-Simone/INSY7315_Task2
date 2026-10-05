@@ -1,0 +1,22 @@
+@model UserCreateInput
+@{ ViewData["Title"] = "Add user"; ViewData["Eyebrow"] = "Users"; ViewData["ShowSearch"] = false; }
+<div class="content-narrow"><form asp-action="Create" method="post" class="card" novalidate autocomplete="off">
+  <partial name="_ValidationSummary" />
+  <div class="form-section"><h4>Account</h4><p class="hint">The user must change the temporary password at first sign-in.</p>
+    <div class="field"><label asp-for="FullName">Full name *</label><input asp-for="FullName" type="text" maxlength="120"></div>
+    <div class="field"><label asp-for="Email">Work email *</label><input asp-for="Email" type="email" maxlength="200" autocomplete="off"></div>
+    <div class="field-row">
+      <div class="field"><label asp-for="JobTitle">Job title</label><input asp-for="JobTitle" type="text" maxlength="150"></div>
+      <div class="field"><label asp-for="Phone">Phone</label><input asp-for="Phone" type="tel" maxlength="40"><span asp-validation-for="Phone" class="field-error"></span></div>
+    </div>
+    <div class="field"><label asp-for="TemporaryPassword">Temporary password *</label>
+      <div style="display:flex;gap:8px"><input asp-for="TemporaryPassword" type="text" id="tempPw" autocomplete="off" style="font-family:'IBM Plex Mono',monospace"><button type="button" class="btn btn-outline btn-sm" data-copy="tempPw">Copy</button></div>
+      <p class="field-help">A strong password was generated for you. Share it with the user through a secure channel.</p></div>
+  </div>
+  <div class="form-section"><h4>Role</h4><p class="hint">What can this person do?</p>
+    <label class="visibility-option"><input type="radio" asp-for="Role" value="Admin" checked="@(Model.Role == UserRole.Admin)"><span class="vo-text"><strong>Admin</strong><span>Full access: users, campaigns, events, deleting records, audit log.</span></span></label>
+    <label class="visibility-option"><input type="radio" asp-for="Role" value="SalesRep" checked="@(Model.Role == UserRole.SalesRep)"><span class="vo-text"><strong>Sales rep</strong><span>Create and manage leads, companies, tasks and calendar. Edits only leads assigned to them.</span></span></label>
+    <label class="visibility-option"><input type="radio" asp-for="Role" value="Staff" checked="@(Model.Role == UserRole.Staff)"><span class="vo-text"><strong>Staff</strong><span>Read-only access to leads, companies, events and their own calendar.</span></span></label>
+  </div>
+  <div class="form-actions"><button type="submit" class="btn btn-green"><i class="bi bi-check2"></i> Create user</button><a asp-action="Index" class="btn btn-ghost">Cancel</a></div>
+</form></div>

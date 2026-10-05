@@ -1,0 +1,24 @@
+@model TaskBoard
+@{
+    ViewData["Title"] = "Tasks"; ViewData["Eyebrow"] = "Productivity";
+    var users = (List<UserOption>)ViewBag.Users; int? asg = ViewBag.AssignedToId;
+}
+<div class="page-head">
+  <div><h2>Tasks</h2><p>Stay on top of follow-ups and to-dos.</p></div>
+  <div class="page-actions"><a asp-action="Create" class="btn btn-green"><i class="bi bi-plus-lg"></i> New task</a></div>
+</div>
+<div class="grid grid-4" style="margin-bottom:20px">
+  <div class="card kpi"><span class="kpi-label">Open</span><div class="kpi-value">@Model.OpenCount</div></div>
+  <div class="card kpi"><span class="kpi-label">Due today</span><div class="kpi-value">@Model.DueTodayCount</div></div>
+  <div class="card kpi"><span class="kpi-label">Overdue</span><div class="kpi-value" style="color:@(Model.OverdueCount > 0 ? "var(--red-600)" : "inherit")">@Model.OverdueCount</div></div>
+  <div class="card kpi"><span class="kpi-label">Completed this month</span><div class="kpi-value">@Model.CompletedThisMonth</div></div>
+</div>
+@if (Me.IsAdmin)
+{
+  <form method="get" class="toolbar"><div class="select-wrap"><select name="assignedToId" data-autosubmit><option value="">Everyone's tasks</option>@foreach (var u in users){<option value="@u.Id" selected="@(asg == u.Id)">@u.FullName</option>}</select></div></form>
+}
+<partial name="_Group" model='("Overdue", Model.Overdue, "Nothing overdue.")' />
+<partial name="_Group" model='("Due today", Model.DueToday, "Nothing due today.")' />
+<partial name="_Group" model='("Next 7 days", Model.Upcoming, "No tasks coming up this week.")' />
+<partial name="_Group" model='("Later & unscheduled", Model.Later, "No later tasks.")' />
+<partial name="_Group" model='("Recently completed", Model.Completed, "Completed tasks appear here.")' />

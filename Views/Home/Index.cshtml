@@ -1,0 +1,114 @@
+@model DashboardDto
+@{ ViewData["Title"] = "Dashboard"; ViewData["Eyebrow"] = "Overview"; }
+<div class="page-head">
+  <div>
+    <h2>@UiHelpers.Greeting(), @UiHelpers.FirstName(Me.Name)</h2>
+    <p>@if (Model.FollowUpsDue > 0){<text>You have <strong>@Model.FollowUpsDue follow-up@(Model.FollowUpsDue == 1 ? "" : "s")</strong> due@(Model.FollowUpsOverdue > 0 ? $" ({Model.FollowUpsOverdue} overdue)" : "").</text>}else{<text>You're all caught up on follow-ups.</text>} Here's how the pipeline looks today.</p>
+  </div>
+  @if (Me.CanWrite)
+  {
+    <div class="page-actions">
+      <a asp-controller="Tasks" asp-action="Create" class="btn btn-outline"><i class="bi bi-check2-square"></i> Add task</a>
+      <a asp-controller="Leads" asp-action="Create" class="btn btn-green"><i class="bi bi-plus-lg"></i> New lead</a>
+    </div>
+  }
+</div>
+
+<div class="grid grid-4" style="margin-bottom:20px">
+  <div class="card kpi">
+    <div class="kpi-top"><span class="kpi-label">Active leads</span><span class="kpi-icon gold"><i class="bi bi-people"></i></span></div>
+    <div class="kpi-value">@Model.ActiveLeads</div>
+    <div class="kpi-trend">@Model.NewLeadsThisMonth <span>new this month</span></div>
+  </div>
+  <div class="card kpi">
+    <div class="kpi-top"><span class="kpi-label">Pipeline value</span><span class="kpi-icon blue"><i class="bi bi-graph-up-arrow"></i></span></div>
+    <div class="kpi-value">@UiHelpers.MoneyShort(Model.PipelineValue)</div>
+    <div class="kpi-trend">@if (Model.LeadGrowthPct is double g){<span class="@(g >= 0 ? "up" : "down")" style="color:inherit"><i class="bi @(g >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i> @Math.Abs(g)%</span><span>new leads vs last month</span>}else{<span>open deals</span>}</div>
+  </div>
+  <div class="card kpi">
+    <div class="kpi-top"><span class="kpi-label">Closed won (this month)</span><span class="kpi-icon green"><i class="bi bi-trophy"></i></span></div>
+    <div class="kpi-value">@UiHelpers.MoneyShort(Model.ClosedWonMtd)</div>
+    <div class="kpi-trend">@Model.ClosedWonCountMtd <span>deal@(Model.ClosedWonCountMtd == 1 ? "" : "s") won</span></div>
+  </div>
+  <div class="card kpi">
+    <div class="kpi-top"><span class="kpi-label">Follow-ups due</span><span class="kpi-icon violet"><i class="bi bi-clock-history"></i></span></div>
+    <div class="kpi-value">@Model.FollowUpsDue</div>
+    <div class="kpi-trend @(Model.FollowUpsOverdue > 0 ? "down" : "")">@Model.FollowUpsOverdue <span>overdue</span></div>
+  </div>
+</div>
+
+<div class="grid grid-12" style="margin-bottom:20px">
+  <div class="card span-8">
+    <div class="card-head"><div><h3>Pipeline by stage</h3><p>Value of open deals at each stage</p></div><a asp-controller="Leads" asp-action="Pipeline" class="btn btn-ghost btn-sm">Open pipeline <i class="bi bi-arrow-right"></i></a></div>
+    <div class="card-pad">
+      @{ var max = Math.Max(1, Model.Stages.Max(s => s.Value)); }
+      @foreach (var s in Model.Stages)
+      {
+        <div style="margin-bottom:16px">
+          <div class="stat-row" style="justify-content:space-between;margin-bottom:6px"><span><strong style="color:var(--text-900)">@s.Stage.Label()</strong> · @s.Count lead@(s.Count == 1 ? "" : "s")</span><span class="mono">@UiHelpers.Money(s.Value)</span></div>
+          <div class="progress"><span style="width:@((int)Math.Round((double)(s.Value / max) * 100))%"></span></div>
+        </div>
+      }
+    </div>
+  </div>
+  <div class="card span-4">
+    <div class="card-head"><div><h3>Follow-ups</h3><p>Due today or overdue</p></div></div>
+    <div class="card-pad" style="padding-top:8px">
+      @if (Model.FollowUps.Count == 0){<div class="empty-state" style="padding:28px 8px"><i class="bi bi-check2-all"></i><h4>Nothing due</h4><p>No follow-ups need attention right now.</p></div>}
+      @foreach (var f in Model.FollowUps)
+      {
+        <div class="cal-agenda-item">
+          <div class="cal-agenda-body" style="flex:1"><strong><a asp-controller="Leads" asp-action="Details" asp-route-id="@f.Id">@f.FullName</a></strong><p>@f.CompanyName · @UiHelpers.RelativeDate(f.NextFollowUp)</p></div>
+          <span class="badge @(f.NextFollowUp < Clock.LocalToday ? "badge-red" : "badge-amber")">@(f.NextFollowUp < Clock.LocalToday ? "Overdue" : "Due")</span>
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-12">
+  <div class="card span-7">
+    <div class="card-head"><div><h3>Recent leads</h3></div><a asp-controller="Leads" asp-action="Index" class="btn btn-ghost btn-sm">View all</a></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Lead</th><th>Stage</th><th class="text-right">Value</th></tr></thead>
+      <tbody>
+      @foreach (var l in Model.RecentLeads)
+      {
+        <tr class="row-link" data-href="@Url.Action("Details", "Leads", new { id = l.Id })">
+          <td><div class="cell-name"><span class="avatar">@UiHelpers.Initials(l.FullName)</span><div><strong>@l.FullName</strong><span>@(l.CompanyName ?? "—")</span></div></div></td>
+          <td><span class="badge @UiHelpers.StageBadge(l.Stage)">@l.Stage.Label()</span></td>
+          <td class="text-right mono">@UiHelpers.Money(l.DealValue)</td>
+        </tr>
+      }
+      @if (Model.RecentLeads.Count == 0){<tr><td colspan="3" class="text-muted" style="padding:28px;text-align:center">No leads yet.</td></tr>}
+      </tbody></table></div>
+  </div>
+  <div class="span-5" style="display:flex;flex-direction:column;gap:20px">
+    @if (Me.CanWrite)
+    {
+      <div class="card">
+        <div class="card-head"><div><h3>My tasks</h3></div><a asp-controller="Tasks" asp-action="Index" class="btn btn-ghost btn-sm">All tasks</a></div>
+        <div class="card-pad" style="padding-top:8px">
+          @if (Model.MyTasks.Count == 0){<p class="text-muted" style="font-size:13px;padding:14px 0">No open tasks. Nice work.</p>}
+          @foreach (var t in Model.MyTasks)
+          {
+            <div class="cal-agenda-item"><div class="cal-agenda-body" style="flex:1"><strong><span class="priority-dot @UiHelpers.PriorityClass(t.Priority)"></span>@t.Title</strong><p>@UiHelpers.RelativeDate(t.DueAt)</p></div>@if (t.IsOverdue){<span class="badge badge-red">Overdue</span>}</div>
+          }
+        </div>
+      </div>
+    }
+    <div class="card">
+      <div class="card-head"><div><h3>Upcoming events</h3></div><a asp-controller="Events" asp-action="Index" class="btn btn-ghost btn-sm">All events</a></div>
+      <div class="card-pad" style="padding-top:8px">
+        @if (Model.UpcomingEvents.Count == 0){<p class="text-muted" style="font-size:13px;padding:14px 0">No upcoming events scheduled.</p>}
+        @foreach (var e in Model.UpcomingEvents)
+        {
+          <div class="cal-agenda-item">
+            <div class="cal-agenda-date"><strong>@e.StartDate.Day</strong><span>@e.StartDate.ToString("MMM")</span></div>
+            <div class="cal-agenda-body"><strong><a asp-controller="Events" asp-action="Details" asp-route-id="@e.Id">@e.Name</a></strong><p>@e.Location · @e.Attendees registered</p></div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>

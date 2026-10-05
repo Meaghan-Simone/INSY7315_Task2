@@ -1,0 +1,65 @@
+@model CalendarMonth
+@{
+    ViewData["Title"] = "Calendar"; ViewData["Eyebrow"] = "Schedule";
+    var first = new DateTime(Model.Year, Model.Month, 1);
+    var gridStart = first.AddDays(-(int)first.DayOfWeek);
+    var prev = first.AddMonths(-1); var next = first.AddMonths(1);
+    var today = Clock.LocalToday;
+    string TypeClass(CalendarItem i) => i.Type switch { CalendarItemType.Call => "type-call", CalendarItemType.FollowUp => "type-followup", CalendarItemType.Other => "type-event", _ => "type-meeting" };
+    string TypeIcon(CalendarItem i) => i.Type switch { CalendarItemType.Call => "bi-telephone", CalendarItemType.FollowUp => "bi-clock-history", CalendarItemType.Other => "bi-star", _ => "bi-people" };
+}
+<div class="page-head"><div><h2>Calendar</h2><p>Your meetings, calls and lead follow-ups. Private events are visible only to you unless shared.</p></div>
+  <div class="page-actions"><a asp-action="Create" class="btn btn-green"><i class="bi bi-plus-lg"></i> New event</a></div></div>
+<div class="grid grid-12">
+  <div class="span-8">
+    <div class="cal-toolbar">
+      <div class="cal-nav">
+        <a class="btn btn-outline btn-sm" asp-action="Index" asp-route-year="@prev.Year" asp-route-month="@prev.Month" aria-label="Previous month"><i class="bi bi-chevron-left"></i></a>
+        <span class="cal-month-label">@first.ToString("MMMM yyyy")</span>
+        <a class="btn btn-outline btn-sm" asp-action="Index" asp-route-year="@next.Year" asp-route-month="@next.Month" aria-label="Next month"><i class="bi bi-chevron-right"></i></a>
+        <a class="btn btn-ghost btn-sm" asp-action="Index" asp-route-year="@today.Year" asp-route-month="@today.Month">Today</a>
+      </div>
+    </div>
+    <div class="cal-grid">
+      @foreach (var d in new[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" }){<div class="cal-weekday">@d</div>}
+      @for (var i = 0; i < 42; i++)
+      {
+        var day = gridStart.AddDays(i);
+        var items = Model.Items.Where(e => e.StartsAt.Date == day.Date).ToList();
+        <div class="cal-day @(day.Month != Model.Month ? "other-month" : "") @(day.Date == today ? "is-today" : "")">
+          <a class="cal-day-num" asp-action="Create" asp-route-date="@day.ToString("yyyy-MM-dd")" title="Add event" style="color:inherit">@day.Day</a>
+          @foreach (var e in items.Take(3))
+          {
+            <div class="cal-event @TypeClass(e)" title="@e.Title — @e.StartsAt.ToString("HH:mm")@(e.IsMine ? "" : " · " + e.OwnerName)">
+              <i class="bi @TypeIcon(e)"></i>
+              @if (e.LinkUrl != null && e.IsReadOnly){<a href="@e.LinkUrl">@e.StartsAt.ToString("HH:mm") @e.Title</a>}
+              else if (e.IsMine && e.Id.HasValue){<a asp-action="Edit" asp-route-id="@e.Id">@e.StartsAt.ToString("HH:mm") @e.Title</a>}
+              else {<span>@e.StartsAt.ToString("HH:mm") @e.Title</span>}
+            </div>
+          }
+          @if (items.Count > 3){<div class="cal-more">+@(items.Count - 3) more</div>}
+        </div>
+      }
+    </div>
+    <div class="cal-legend"><span><i style="background:var(--blue-600)"></i>Meeting</span><span><i style="background:var(--violet-600)"></i>Call</span><span><i style="background:var(--amber-600)"></i>Follow-up (from leads)</span><span><i style="background:var(--gold-600)"></i>Other</span></div>
+  </div>
+  <div class="card span-4">
+    <div class="card-head"><h3>Coming up</h3></div>
+    <div class="card-pad" style="padding-top:8px">
+      @if (Model.Upcoming.Count == 0){<p class="text-muted" style="font-size:13px;padding:14px 0">Nothing scheduled.</p>}
+      @foreach (var e in Model.Upcoming)
+      {
+        <div class="cal-agenda-item">
+          <div class="cal-agenda-date"><strong>@e.StartsAt.Day</strong><span>@e.StartsAt.ToString("MMM")</span></div>
+          <div class="cal-agenda-body" style="flex:1"><strong>@e.Title</strong><p>@e.StartsAt.ToString("HH:mm") · @e.Type.Label()@(e.LinkedLabel != null ? " · " + e.LinkedLabel : "")</p>
+            <div class="cal-agenda-meta">
+              @if (e.Visibility == CalendarVisibility.Team){<span class="badge badge-gold">Team</span>}
+              else if (e.Visibility == CalendarVisibility.Shared){<span class="badge badge-blue">Shared@(e.IsMine ? "" : " by " + e.OwnerName)</span>}
+              else {<span class="badge badge-gray">Private</span>}
+              @if (e.LinkUrl != null){<a href="@e.LinkUrl" style="font-size:12px;text-decoration:underline">Open</a>}
+            </div></div>
+        </div>
+      }
+    </div>
+  </div>
+</div>

@@ -1,0 +1,22 @@
+@model SearchResults
+@{ ViewData["Title"] = "Search"; ViewData["Eyebrow"] = "Results"; }
+<div class="page-head"><div><h2>@(string.IsNullOrEmpty(Model.Query) ? "Search" : $"Results for “{Model.Query}”")</h2><p>@(Model.Query.Length < 2 ? "Type at least 2 characters to search leads, companies and events." : $"{Model.Total} match{(Model.Total == 1 ? "" : "es")} found.")</p></div></div>
+@if (Model.Query.Length >= 2 && Model.Total == 0){<div class="card"><div class="empty-state"><i class="bi bi-search"></i><h4>No matches</h4><p>Try a different name, email address or company.</p></div></div>}
+@if (Model.Leads.Count > 0)
+{
+  <div class="card" style="margin-bottom:20px"><div class="card-head"><h3>Leads</h3></div><div class="table-wrap"><table><tbody>
+  @foreach (var l in Model.Leads){<tr class="row-link" data-href="@Url.Action("Details", "Leads", new { id = l.Id })"><td><div class="cell-name"><span class="avatar">@UiHelpers.Initials(l.FullName)</span><div><strong>@l.FullName</strong><span>@l.JobTitle</span></div></div></td><td>@l.CompanyName</td><td><span class="badge @UiHelpers.StageBadge(l.Stage)">@l.Stage.Label()</span></td></tr>}
+  </tbody></table></div></div>
+}
+@if (Model.Companies.Count > 0)
+{
+  <div class="card" style="margin-bottom:20px"><div class="card-head"><h3>Companies</h3></div><div class="table-wrap"><table><tbody>
+  @foreach (var c in Model.Companies){<tr class="row-link" data-href="@Url.Action("Details", "Companies", new { id = c.Id })"><td><strong>@c.Name</strong></td><td class="text-muted">@c.Industry</td><td class="text-muted">@c.City</td><td class="text-right text-muted">@c.LeadCount lead@(c.LeadCount == 1 ? "" : "s")</td></tr>}
+  </tbody></table></div></div>
+}
+@if (Model.Events.Count > 0)
+{
+  <div class="card"><div class="card-head"><h3>Events</h3></div><div class="table-wrap"><table><tbody>
+  @foreach (var e in Model.Events){<tr class="row-link" data-href="@Url.Action("Details", "Events", new { id = e.Id })"><td><strong>@e.Name</strong></td><td class="text-muted">@e.Location</td><td class="text-right text-muted">@UiHelpers.DateRange(e.StartDate, e.EndDate)</td></tr>}
+  </tbody></table></div></div>
+}
