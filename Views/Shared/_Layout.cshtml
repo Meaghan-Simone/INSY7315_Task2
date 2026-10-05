@@ -18,6 +18,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="csrf-token" content="@csrf" />
 <meta name="robots" content="noindex" />
+<meta name="theme-color" content="#4B5D2A" />
+<link rel="icon" type="image/png" href="~/Images/logo.png" />
 <title>@ViewData["Title"] · Uncovering Greatness CRM</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,6 +28,7 @@
 <link rel="stylesheet" href="~/css/styles.css" asp-append-version="true" />
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to main content</a>
 <div class="app-shell">
   <div class="scrim"></div>
   <aside class="sidebar" id="sidebar">
@@ -33,7 +36,7 @@
       <div class="brand-mark"><img src="~/Images/logo.png" alt="Uncovering Greatness Logo"></div>
       <span class="brand-text"><strong>Uncovering Greatness</strong><span>CRM Platform</span></span>
     </div>
-    <nav class="sidebar-nav">
+    <nav class="sidebar-nav" aria-label="Main navigation">
       <div class="nav-label">Workspace</div>
       <a asp-controller="Home" asp-action="Index" class="nav-item @(IsActive("Home") ? "active" : "")"><i class="bi bi-speedometer2"></i>Dashboard</a>
       <a asp-controller="Leads" asp-action="Pipeline" class="nav-item @(IsActive("Leads") && currentAction == "Pipeline" ? "active" : "")"><i class="bi bi-kanban"></i>Pipeline</a>
@@ -56,11 +59,11 @@
     </nav>
     <div class="sidebar-foot">
       <div class="dropdown">
-        <div class="sidebar-user" data-dropdown="userMenu" style="cursor:pointer">
+        <button type="button" class="sidebar-user" data-dropdown="userMenu" aria-haspopup="true" aria-expanded="false" aria-label="Account menu for @Me.Name">
           <span class="avatar gold">@UiHelpers.Initials(Me.Name)</span>
           <span class="meta"><strong>@Me.Name</strong><span>@Me.Role.Label()</span></span>
           <i class="bi bi-chevron-expand"></i>
-        </div>
+        </button>
         <div class="dropdown-panel user-menu" id="userMenu" style="right:auto;left:0;bottom:calc(100% + 10px);top:auto;">
           <a class="dropdown-item" asp-controller="Account" asp-action="Profile"><i class="bi bi-person"></i> My profile</a>
           <a class="dropdown-item" asp-controller="Account" asp-action="ChangePassword"><i class="bi bi-key"></i> Change password</a>
@@ -74,7 +77,7 @@
 
   <div class="main">
     <header class="topbar">
-      <button class="menu-toggle" aria-label="Toggle navigation"><i class="bi bi-list"></i></button>
+      <button type="button" class="menu-toggle" aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="false"><i class="bi bi-list"></i></button>
       <div class="crumb">
         <span class="eyebrow">@eyebrow</span>
         <h1>@ViewData["Title"]</h1>
@@ -92,10 +95,10 @@
       </div>
     </header>
 
-    <main class="content">
+    <main class="content" id="main" tabindex="-1">
       @if (!string.IsNullOrEmpty(flash))
       {
-        <div class="flash @flashKind" role="status"><i class="bi @(flashKind == "success" ? "bi-check-circle" : "bi-exclamation-circle")"></i> @flash</div>
+        <div class="flash @flashKind" role="@(flashKind == "error" ? "alert" : "status")"><i class="bi @(flashKind == "success" ? "bi-check-circle" : "bi-exclamation-circle")"></i> @flash</div>
       }
       @RenderBody()
     </main>
