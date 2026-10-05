@@ -1,0 +1,59 @@
+name: Deploy
+
+# Continuous deployment: merging (or pushing) to main runs the full CI suite, then triggers a Render deploy and
+# waits for the new version to report healthy.
+#
+# One-time setup in GitHub -> Settings -> Secrets and variables -> Actions:
+#   secret   RENDER_DEPLOY_HOOK_URL  (Render dashboard -> your service -> Settings -> Deploy Hook)
+#   variable APP_URL                 (the public address, e.g. https://uncovering-greatness-crm.onrender.com)
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Test
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Deploy to Render
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - name: Trigger Render deploy
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then echo "::error::Secret RENDER_DEPLOY_HOOK_URL is not set."; exit 1; fi
+          curl --fail --silent --show-error -X POST "$HOOK"
+          echo "Deploy requested."
+
+      - name: Wait for the site to report healthy
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          if [ -z "$APP_URL" ]; then echo "::error::Repository variable APP_URL is not set."; exit 1; fi
+          sleep 45   # give Render time to start replacing the old instance
+          for i in $(seq 1 30); do
+            code=$(curl --silent --output /dev/null --write-out "%{http_code}" "$APP_URL/healthz" || true)
+            echo "Attempt $i: HTTP $code"
+            if [ "$code" = "200" ]; then echo "Deployment is healthy."; exit 0; fi
+            sleep 20
+          done
+          echo "::error::The site did not become healthy in time."
+          exit 1
+
+      - name: Smoke test the login page
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: curl --fail --silent --show-error --output /dev/null "$APP_URL/Account/Login"

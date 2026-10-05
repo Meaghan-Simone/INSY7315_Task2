@@ -4,7 +4,8 @@ services:
     name: uncovering-greatness-crm
     runtime: docker
     plan: starter
-    healthCheckPath: /Account/Login
+    autoDeploy: false          # deployments are triggered by the GitHub Actions pipeline (.github/workflows/cd.yml) after the tests pass
+    healthCheckPath: /healthz
     disk:
       name: crm-data
       mountPath: /app/App_Data

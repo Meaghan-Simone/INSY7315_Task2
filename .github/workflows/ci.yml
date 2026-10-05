@@ -1,0 +1,61 @@
+name: CI
+
+# Runs on every push to a working branch and on every pull request into develop/main.
+# Also callable from the deployment workflow so a release can never ship without green tests.
+on:
+  push:
+    branches: [develop, "feature/**", "fix/**", "hotfix/**"]
+  pull_request:
+    branches: [develop, main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore
+        run: dotnet restore Tests/UncoveringGreatnessCRM.Tests.csproj
+
+      - name: Build (warnings are shown, errors fail the build)
+        run: dotnet build Tests/UncoveringGreatnessCRM.Tests.csproj --configuration Release --no-restore
+
+      - name: Test (unit + integration, with coverage)
+        run: >
+          dotnet test Tests/UncoveringGreatnessCRM.Tests.csproj
+          --configuration Release --no-build
+          --logger "trx;LogFileName=test-results.trx"
+          --collect:"XPlat Code Coverage"
+          --results-directory TestResults
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults/**
+          retention-days: 14
+
+  docker-build:
+    name: Container image builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the production image (not pushed)
+        run: docker build --tag uncovering-greatness-crm:ci .
