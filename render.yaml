@@ -1,4 +1,5 @@
-# Render blueprint. A persistent disk and outbound SMTP both need a PAID instance (starter or higher).
+# Render blueprint (free plan). A persistent disk and outbound SMTP both need a PAID instance (starter or higher),
+# so on the free plan the database resets on each deploy/restart and email cannot be sent.
 services:
   - type: web
     name: uncovering-greatness-crm
@@ -6,10 +7,6 @@ services:
     plan: free
     autoDeploy: false          # deployments are triggered by the GitHub Actions pipeline (.github/workflows/cd.yml) after the tests pass
     healthCheckPath: /healthz
-    disk:
-      name: crm-data
-      mountPath: /app/App_Data
-      sizeGB: 1
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
